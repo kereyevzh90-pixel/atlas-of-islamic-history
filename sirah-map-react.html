@@ -199,7 +199,7 @@ body {
   display:flex; align-items:center; overflow:hidden;
   padding:8px 12px; gap:0;
   background:#0e0b06; border-radius:40px; border:1px solid #2a2010;
-  cursor:grab; user-select:none; touch-action:pan-y;
+  cursor:grab; user-select:none; touch-action:none;
 }
 .yr-circles:active { cursor:grabbing; }
 .yr-dot-wrap { display:flex; align-items:center; flex-shrink:0; }
@@ -1513,6 +1513,8 @@ function App() {
   const [winStart,   setWinStart]   = useState(1);
   const WIN = 10;
   const playTimer   = useRef(null);
+  const dragX       = useRef(null);
+  const dragged     = useRef(false);
 
   // Slide window to keep current year visible
   useEffect(() => {
@@ -1671,44 +1673,48 @@ function App() {
         })()}
 
         <div className="yr-circles-wrap">
-          {(() => {
-            const dragX = useRef(null);
-            const dragged = useRef(false);
-            const onDragStart = (clientX) => { dragX.current = clientX; dragged.current = false; };
-            const onDragMove  = (clientX) => { if (dragX.current !== null && Math.abs(clientX - dragX.current) > 8) dragged.current = true; };
-            const onDragEnd   = (clientX) => {
+          <div className="yr-circles"
+            onMouseDown={e => { dragX.current = e.clientX; dragged.current = false; }}
+            onMouseMove={e => { if (dragX.current !== null && Math.abs(e.clientX - dragX.current) > 8) dragged.current = true; }}
+            onMouseUp={e => {
               if (dragX.current === null) return;
-              const dx = dragX.current - clientX;
+              const dx = dragX.current - e.clientX;
               if (Math.abs(dx) > 35) shiftWin(dx > 0 ? 1 : -1);
               dragX.current = null;
-            };
-            return (
-              <div className="yr-circles"
-                onMouseDown={e => onDragStart(e.clientX)}
-                onMouseMove={e => onDragMove(e.clientX)}
-                onMouseUp={e => onDragEnd(e.clientX)}
-                onMouseLeave={e => { if (dragX.current !== null) onDragEnd(e.clientX); }}
-                onTouchStart={e => onDragStart(e.touches[0].clientX)}
-                onTouchMove={e => onDragMove(e.touches[0].clientX)}
-                onTouchEnd={e => onDragEnd(e.changedTouches[0].clientX)}
-              >
-                {Array.from({length:WIN},(_,i) => winStart + i).map((n, i) => (
-                  <div key={n} className="yr-dot-wrap">
-                    {i > 0 && <div className={`yr-dash${n <= year ? ' passed' : ''}`}/>}
-                    <div
-                      className={`yr-dot${n === year ? ' active' : ''}`}
-                      onClick={() => {
-                        if (dragged.current) return;
-                        setYear(n);
-                        if (popYear === n) { if (window._flyToDefault) window._flyToDefault(); }
-                        else setPopYear(n);
-                      }}
-                    >{n}</div>
-                  </div>
-                ))}
+            }}
+            onMouseLeave={e => {
+              if (dragX.current === null) return;
+              const dx = dragX.current - e.clientX;
+              if (Math.abs(dx) > 35) shiftWin(dx > 0 ? 1 : -1);
+              dragX.current = null;
+            }}
+            onTouchStart={e => { dragX.current = e.touches[0].clientX; dragged.current = false; }}
+            onTouchMove={e => {
+              e.preventDefault();
+              if (dragX.current !== null && Math.abs(e.touches[0].clientX - dragX.current) > 8) dragged.current = true;
+            }}
+            onTouchEnd={e => {
+              if (dragX.current === null) return;
+              const dx = dragX.current - e.changedTouches[0].clientX;
+              if (Math.abs(dx) > 35) shiftWin(dx > 0 ? 1 : -1);
+              dragX.current = null;
+            }}
+          >
+            {Array.from({length:WIN},(_,i) => winStart + i).map((n, i) => (
+              <div key={n} className="yr-dot-wrap">
+                {i > 0 && <div className={`yr-dash${n <= year ? ' passed' : ''}`}/>}
+                <div
+                  className={`yr-dot${n === year ? ' active' : ''}`}
+                  onClick={() => {
+                    if (dragged.current) return;
+                    setYear(n);
+                    if (popYear === n) { if (window._flyToDefault) window._flyToDefault(); }
+                    else setPopYear(n);
+                  }}
+                >{n}</div>
               </div>
-            );
-          })()}
+            ))}
+          </div>
         </div>
 
         <div className="filter-row">
