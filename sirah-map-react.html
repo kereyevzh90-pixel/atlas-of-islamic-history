@@ -196,12 +196,16 @@ body {
 /* Year slider */
 .yr-circles-wrap { margin-bottom:clamp(12px,2vw,18px); }
 .yr-circles {
-  display:flex; align-items:center; overflow:hidden;
-  padding:8px 12px; gap:0;
+  overflow:hidden;
+  padding:8px 0;
   background:#0e0b06; border-radius:40px; border:1px solid #2a2010;
   cursor:grab; user-select:none; touch-action:none;
 }
 .yr-circles:active { cursor:grabbing; }
+.yr-circles-inner {
+  display:flex; align-items:center; gap:0;
+  padding:0 12px; will-change:transform;
+}
 .yr-dot-wrap { display:flex; align-items:center; flex-shrink:0; }
 .yr-dot {
   width:34px; height:34px; border-radius:50%;
@@ -1512,9 +1516,26 @@ function App() {
   const [pageEvId,    setPageEvId]    = useState(null);
   const [winStart,   setWinStart]   = useState(1);
   const WIN = 10;
-  const playTimer   = useRef(null);
-  const dragX       = useRef(null);
-  const dragged     = useRef(false);
+  const [slideOffset, setSlideOffset] = useState(0);
+  const [isSliding,   setIsSliding]   = useState(false);
+  const playTimer       = useRef(null);
+  const dragX           = useRef(null);
+  const dragged         = useRef(false);
+  const dotUnitRef      = useRef(48);
+  const circlesInnerRef = useRef(null);
+
+  // Measure actual dot+dash unit after render
+  useEffect(() => {
+    const measure = () => {
+      const wraps = circlesInnerRef.current?.querySelectorAll('.yr-dot-wrap');
+      if (wraps && wraps.length >= 2) {
+        dotUnitRef.current = wraps[1].getBoundingClientRect().left - wraps[0].getBoundingClientRect().left;
+      }
+    };
+    const t = setTimeout(measure, 150);
+    window.addEventListener('resize', measure);
+    return () => { clearTimeout(t); window.removeEventListener('resize', measure); };
+  }, []);
 
   // Slide window to keep current year visible
   useEffect(() => {
@@ -1674,46 +1695,66 @@ function App() {
 
         <div className="yr-circles-wrap">
           <div className="yr-circles"
-            onMouseDown={e => { dragX.current = e.clientX; dragged.current = false; }}
-            onMouseMove={e => { if (dragX.current !== null && Math.abs(e.clientX - dragX.current) > 8) dragged.current = true; }}
+            onMouseDown={e => { dragX.current = e.clientX; dragged.current = false; setIsSliding(true); }}
+            onMouseMove={e => {
+              if (dragX.current === null) return;
+              const dx = e.clientX - dragX.current;
+              if (Math.abs(dx) > 5) dragged.current = true;
+              setSlideOffset(dx);
+            }}
             onMouseUp={e => {
               if (dragX.current === null) return;
-              const dx = dragX.current - e.clientX;
-              if (Math.abs(dx) > 35) shiftWin(dx > 0 ? 1 : -1);
-              dragX.current = null;
+              const dx = e.clientX - dragX.current;
+              const shift = -Math.round(dx / dotUnitRef.current);
+              setWinStart(prev => Math.max(1, Math.min(36 - WIN, prev + shift)));
+              setSlideOffset(0); setIsSliding(false); dragX.current = null;
             }}
             onMouseLeave={e => {
               if (dragX.current === null) return;
-              const dx = dragX.current - e.clientX;
-              if (Math.abs(dx) > 35) shiftWin(dx > 0 ? 1 : -1);
-              dragX.current = null;
+              const dx = e.clientX - dragX.current;
+              const shift = -Math.round(dx / dotUnitRef.current);
+              setWinStart(prev => Math.max(1, Math.min(36 - WIN, prev + shift)));
+              setSlideOffset(0); setIsSliding(false); dragX.current = null;
             }}
-            onTouchStart={e => { dragX.current = e.touches[0].clientX; dragged.current = false; }}
+            onTouchStart={e => { dragX.current = e.touches[0].clientX; dragged.current = false; setIsSliding(true); }}
             onTouchMove={e => {
               e.preventDefault();
-              if (dragX.current !== null && Math.abs(e.touches[0].clientX - dragX.current) > 8) dragged.current = true;
+              if (dragX.current === null) return;
+              const dx = e.touches[0].clientX - dragX.current;
+              if (Math.abs(dx) > 5) dragged.current = true;
+              setSlideOffset(dx);
             }}
             onTouchEnd={e => {
               if (dragX.current === null) return;
-              const dx = dragX.current - e.changedTouches[0].clientX;
-              if (Math.abs(dx) > 35) shiftWin(dx > 0 ? 1 : -1);
-              dragX.current = null;
+              const dx = e.changedTouches[0].clientX - dragX.current;
+              const shift = -Math.round(dx / dotUnitRef.current);
+              setWinStart(prev => Math.max(1, Math.min(36 - WIN, prev + shift)));
+              setSlideOffset(0); setIsSliding(false); dragX.current = null;
             }}
           >
-            {Array.from({length:WIN},(_,i) => winStart + i).map((n, i) => (
-              <div key={n} className="yr-dot-wrap">
-                {i > 0 && <div className={`yr-dash${n <= year ? ' passed' : ''}`}/>}
-                <div
-                  className={`yr-dot${n === year ? ' active' : ''}`}
-                  onClick={() => {
-                    if (dragged.current) return;
-                    setYear(n);
-                    if (popYear === n) { if (window._flyToDefault) window._flyToDefault(); }
-                    else setPopYear(n);
-                  }}
-                >{n}</div>
-              </div>
-            ))}
+            <div
+              ref={circlesInnerRef}
+              className="yr-circles-inner"
+              style={{
+                transform: `translateX(${-(winStart - 1) * dotUnitRef.current + slideOffset}px)`,
+                transition: isSliding ? 'none' : 'transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)',
+              }}
+            >
+              {Array.from({length:35},(_,i) => i+1).map((n, i) => (
+                <div key={n} className="yr-dot-wrap">
+                  {i > 0 && <div className={`yr-dash${n <= year ? ' passed' : ''}`}/>}
+                  <div
+                    className={`yr-dot${n === year ? ' active' : ''}`}
+                    onClick={() => {
+                      if (dragged.current) return;
+                      setYear(n);
+                      if (popYear === n) { if (window._flyToDefault) window._flyToDefault(); }
+                      else setPopYear(n);
+                    }}
+                  >{n}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
