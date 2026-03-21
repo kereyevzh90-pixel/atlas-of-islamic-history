@@ -867,11 +867,11 @@ function fitFullBounds(map) {
 function buildEmpireLayers(map) {
   const layers = [];
   BYZANTINE_POLYS.forEach(c =>
-    layers.push(L.polygon(c, {color:'#3355bb',weight:1.5,dashArray:'6,5',fillColor:'#4466dd',fillOpacity:.28,opacity:.7}).addTo(map)));
+    layers.push(L.polygon(c, {color:'#3355bb',weight:1,dashArray:'6,5',fillColor:'#4466dd',fillOpacity:.12,opacity:.45}).addTo(map)));
   SASSANID_POLYS.forEach(c =>
-    layers.push(L.polygon(c, {color:'#aa3311',weight:1.5,dashArray:'6,5',fillColor:'#cc5522',fillOpacity:.28,opacity:.7}).addTo(map)));
+    layers.push(L.polygon(c, {color:'#aa3311',weight:1,dashArray:'6,5',fillColor:'#cc5522',fillOpacity:.12,opacity:.45}).addTo(map)));
   FREE_ARABIA_POLYS.forEach(c =>
-    layers.push(L.polygon(c, {color:'#997710',weight:1,dashArray:'4,6',fillColor:'#cc9922',fillOpacity:.18,opacity:.6}).addTo(map)));
+    layers.push(L.polygon(c, {color:'#997710',weight:1,dashArray:'4,6',fillColor:'#cc9922',fillOpacity:.08,opacity:.4}).addTo(map)));
   return layers;
 }
 
@@ -904,7 +904,7 @@ function animateZoneIn(poly, delayMs) {
     // Set final visual state immediately — clip-path acts as the reveal mask.
     // Overriding the CSS class transition to 'none' ensures fillOpacity jumps
     // instantly (no unwanted fade while the clip circle is still at 0%).
-    poly.setStyle({ opacity: 1, fillOpacity: 0.38 });
+    poly.setStyle({ opacity: 1, fillOpacity: 0.18 });
     path.style.transition = 'none';
     path.style.clipPath   = 'circle(0% at 50% 50%)';
     path.getBoundingClientRect();  // force reflow so start-state is committed
@@ -922,10 +922,10 @@ function animateZoneIn(poly, delayMs) {
 
       // Glow pulse: briefly brighten fill, then ease back to resting opacity
       path.style.transition = 'fill-opacity 160ms ease-out';
-      poly.setStyle({ fillOpacity: 0.60 });
+      poly.setStyle({ fillOpacity: 0.28 });
       setTimeout(() => {
         path.style.transition = 'fill-opacity 550ms ease-in-out';
-        poly.setStyle({ fillOpacity: 0.38 });
+        poly.setStyle({ fillOpacity: 0.18 });
         setTimeout(() => { path.style.transition = ''; }, 600);
       }, 200);
 
@@ -969,7 +969,7 @@ function updateExpansionLayers(expansionLayers, year, islamicOn = true) {
       zone.polys.forEach(p => {
         const path = p.getElement();
         if (path) { path.style.clipPath = ''; path.style.transition = ''; }
-        p.setStyle({ fillOpacity: 0.38, opacity: 1 });
+        p.setStyle({ fillOpacity: 0.18, opacity: 1 });
       });
     } else {
       // Not yet in timeline — keep hidden
@@ -981,9 +981,9 @@ function updateExpansionLayers(expansionLayers, year, islamicOn = true) {
 function updateEmpireLayerVis(empireLayers, byzantineOn, sassanidOn, arabiaOn) {
   // Byzantine = first BYZANTINE_POLYS.length layers
   const bl = BYZANTINE_POLYS.length, sl = SASSANID_POLYS.length, al = FREE_ARABIA_POLYS.length;
-  empireLayers.slice(0, bl).forEach(l => l.setStyle({ fillOpacity: byzantineOn ? .28 : 0, opacity: byzantineOn ? .7 : 0 }));
-  empireLayers.slice(bl, bl+sl).forEach(l => l.setStyle({ fillOpacity: sassanidOn ? .28 : 0, opacity: sassanidOn ? .7 : 0 }));
-  empireLayers.slice(bl+sl, bl+sl+al).forEach(l => l.setStyle({ fillOpacity: arabiaOn ? .18 : 0, opacity: arabiaOn ? .6 : 0 }));
+  empireLayers.slice(0, bl).forEach(l => l.setStyle({ fillOpacity: byzantineOn ? .12 : 0, opacity: byzantineOn ? .45 : 0 }));
+  empireLayers.slice(bl, bl+sl).forEach(l => l.setStyle({ fillOpacity: sassanidOn ? .12 : 0, opacity: sassanidOn ? .45 : 0 }));
+  empireLayers.slice(bl+sl, bl+sl+al).forEach(l => l.setStyle({ fillOpacity: arabiaOn ? .08 : 0, opacity: arabiaOn ? .4 : 0 }));
 }
 
 let _regionLabelLayers = [];
