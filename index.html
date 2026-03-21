@@ -126,7 +126,49 @@ body {
 .leg-row:last-child { margin-bottom:0; }
 .leg-row.off { opacity:.3; }
 .leg-swatch { width:11px; height:11px; border-radius:2px; flex-shrink:0; }
-@media (max-width:400px) { .legend { display:none; } }
+/* ── MOBILE ──────────────────────────────────────────────── */
+@media (max-width:600px) {
+  body { padding:0; }
+  .card { border-radius:0; border-left:none; border-right:none; }
+
+  /* Header */
+  .header { padding:10px 12px; gap:6px; }
+  .arabic { font-size:1.3rem; }
+  .latin  { display:none; }
+  .spread-btn { padding:5px 11px; font-size:.52rem; gap:5px; }
+  .lang-grp { gap:3px; }
+  .lbtn { padding:4px 7px; font-size:.62rem; }
+
+  /* Controls bottom */
+  .controls { padding:10px 12px 12px; }
+  .year-num { font-size:1.6rem; }
+  .era-row  { font-size:.7rem; margin-bottom:10px; }
+
+  /* Year circles — smaller */
+  .yr-circles { padding:5px 8px; gap:0; }
+  .yr-dot  { width:26px; height:26px; font-size:.56rem; }
+  .yr-dash { width:8px; }
+  .yr-circles-wrap { margin-bottom:8px; }
+
+  /* Filter buttons — compact */
+  .filter-row { gap:4px; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; padding-bottom:2px; }
+  .filter-row::-webkit-scrollbar { display:none; }
+  .fbtn { padding:4px 9px; font-size:.5rem; letter-spacing:1px; white-space:nowrap; }
+  .fdot { width:5px; height:5px; }
+
+  /* Legend */
+  .legend { display:none; }
+
+  /* Event popup card */
+  .yr-popup-card { max-width:90px; padding:5px 8px; }
+  .yr-popup-title { font-size:.54rem; }
+}
+
+@media (max-width:380px) {
+  .yr-dot  { width:22px; height:22px; font-size:.5rem; }
+  .yr-dash { width:5px; }
+  .spread-btn span:last-child { display:none; }
+}
 .leg-sep { border:none; border-top:1px solid #2a2010; margin:6px 0 5px; }
 .leg-row.route { cursor:default; }
 .leg-line { flex-shrink:0; }
