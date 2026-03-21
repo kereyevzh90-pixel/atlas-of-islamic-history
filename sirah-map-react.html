@@ -99,7 +99,7 @@ body {
               stroke-width .5s ease-in-out, filter .55s ease-in-out;
 }
 .leaflet-tile-pane {
-  filter: brightness(.55) saturate(.3) contrast(1.15);
+  filter: brightness(.78) saturate(.35) contrast(1.1);
 }
 
 /* ── MAP UI BUTTONS ─────────────────────────────────────── */
@@ -147,8 +147,10 @@ body {
   /* Year circles — smaller */
   .yr-circles { padding:5px 8px; gap:0; }
   .yr-dot  { width:26px; height:26px; font-size:.56rem; }
-  .yr-dash { width:8px; }
+  .yr-dash { width:6px; }
   .yr-circles-wrap { margin-bottom:8px; }
+  .yr-arrow { width:26px; height:26px; font-size:.8rem; }
+  .yr-slider-row { gap:5px; }
 
   /* Filter buttons — compact */
   .filter-row { gap:4px; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; padding-bottom:2px; }
@@ -193,15 +195,24 @@ body {
 }
 .era-star { color:#d4a853; font-style:normal; }
 
-/* Year circles */
+/* Year slider */
 .yr-circles-wrap { margin-bottom:clamp(12px,2vw,18px); }
+.yr-slider-row {
+  display:flex; align-items:center; gap:8px;
+}
+.yr-arrow {
+  flex-shrink:0; width:30px; height:30px; border-radius:50%;
+  background:transparent; border:1.5px solid #352b18; color:#5a4828;
+  cursor:pointer; font-size:.9rem; display:flex; align-items:center;
+  justify-content:center; transition:color .18s, border-color .18s;
+}
+.yr-arrow:hover:not(:disabled) { color:#d4a853; border-color:#d4a853; }
+.yr-arrow:disabled { opacity:.25; cursor:default; }
 .yr-circles {
-  display:flex; align-items:center; overflow-x:auto;
+  flex:1; display:flex; align-items:center; overflow:hidden;
   padding:8px 12px; gap:0;
   background:#0e0b06; border-radius:40px; border:1px solid #2a2010;
-  scrollbar-width:none; -ms-overflow-style:none;
 }
-.yr-circles::-webkit-scrollbar { display:none; }
 .yr-dot-wrap { display:flex; align-items:center; flex-shrink:0; }
 .yr-dot {
   width:34px; height:34px; border-radius:50%;
@@ -1510,20 +1521,19 @@ function App() {
   const [popYear,    setPopYear]    = useState(null);
   const [showDetail,  setShowDetail]  = useState(false);
   const [pageEvId,    setPageEvId]    = useState(null);
+  const [winStart,   setWinStart]   = useState(1);
+  const WIN = 10;
   const playTimer   = useRef(null);
-  const circlesRef  = useRef(null);
 
-  // Auto-scroll circles to active dot
+  // Slide window to keep current year visible
   useEffect(() => {
-    const wrap = circlesRef.current;
-    if (!wrap) return;
-    const active = wrap.querySelector('.yr-dot.active');
-    if (!active) return;
-    const dotLeft = active.offsetLeft;
-    const dotW    = active.offsetWidth;
-    const wrapW   = wrap.offsetWidth;
-    wrap.scrollTo({ left: dotLeft - wrapW / 2 + dotW / 2, behavior: 'smooth' });
+    if (year < winStart) setWinStart(Math.max(1, year - 2));
+    else if (year >= winStart + WIN) setWinStart(Math.min(36 - WIN, year - WIN + 3));
   }, [year]);
+
+  const shiftWin = (dir) => {
+    setWinStart(prev => Math.max(1, Math.min(36 - WIN, prev + dir * WIN)));
+  };
 
   // Derived
   const era     = ERAS.find(e => year >= e.from && year < e.to) || ERAS[ERAS.length-1];
@@ -1672,23 +1682,27 @@ function App() {
         })()}
 
         <div className="yr-circles-wrap">
-          <div className="yr-circles" ref={circlesRef}>
-            {Array.from({length:35},(_,i)=>i+1).map((n,i) => (
-              <div key={n} className="yr-dot-wrap">
-                {i > 0 && <div className={`yr-dash${n <= year ? ' passed' : ''}`}/>}
-                <div
-                  className={`yr-dot${n === year ? ' active' : ''}`}
-                  onClick={() => {
-                    setYear(n);
-                    if (popYear === n) {
-                      if (window._flyToDefault) window._flyToDefault();
-                    } else {
-                      setPopYear(n);
-                    }
-                  }}
-                >{n}</div>
-              </div>
-            ))}
+          <div className="yr-slider-row">
+            <button className="yr-arrow" onClick={() => shiftWin(-1)} disabled={winStart <= 1}>‹</button>
+            <div className="yr-circles">
+              {Array.from({length:WIN},(_,i) => winStart + i).map((n, i) => (
+                <div key={n} className="yr-dot-wrap">
+                  {i > 0 && <div className={`yr-dash${n <= year ? ' passed' : ''}`}/>}
+                  <div
+                    className={`yr-dot${n === year ? ' active' : ''}`}
+                    onClick={() => {
+                      setYear(n);
+                      if (popYear === n) {
+                        if (window._flyToDefault) window._flyToDefault();
+                      } else {
+                        setPopYear(n);
+                      }
+                    }}
+                  >{n}</div>
+                </div>
+              ))}
+            </div>
+            <button className="yr-arrow" onClick={() => shiftWin(1)} disabled={winStart >= 36 - WIN}>›</button>
           </div>
         </div>
 
