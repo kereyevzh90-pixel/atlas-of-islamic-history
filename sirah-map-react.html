@@ -226,6 +226,28 @@ body {
 .yr-dash { width:10px; height:0; flex-shrink:0; border-top:2px dashed #1e1808; }
 .yr-dash.passed { border-color:#3a2a10; }
 
+/* Scrubber */
+.yr-scrubber {
+  width:100%; margin-bottom:8px;
+  -webkit-appearance:none; appearance:none;
+  height:3px; border-radius:2px;
+  background:linear-gradient(to right, #d4a853 calc(var(--pct)*1%), #2a2010 calc(var(--pct)*1%));
+  outline:none; cursor:pointer;
+}
+.yr-scrubber::-webkit-slider-thumb {
+  -webkit-appearance:none; width:14px; height:14px;
+  border-radius:50%; background:#d4a853; cursor:pointer;
+  box-shadow:0 0 6px rgba(212,168,83,.6);
+}
+.yr-scrubber::-moz-range-thumb {
+  width:14px; height:14px; border-radius:50%;
+  background:#d4a853; border:none; cursor:pointer;
+}
+@media(max-width:600px) {
+  .yr-scrubber { height:4px; margin-bottom:6px; }
+  .yr-scrubber::-webkit-slider-thumb { width:18px; height:18px; }
+}
+
 /* Year popup */
 .yr-popup {
   margin-bottom:10px; display:flex; flex-direction:row; align-items:flex-start;
@@ -813,18 +835,11 @@ const EVENTS = [
 
 const ALL_FILTER_TYPES = ['battle','treaty','journey','conquest','event'];
 
-// Full timeline ticks: every year 1-35, then every 10 years to 1447
+// Full timeline: every year 1 → 1447
 const CURRENT_AH = 1447;
-const TICKS = [];
-for (let y = 1; y <= 35; y++) TICKS.push(y);
-for (let y = 40; y <= 1440; y += 10) TICKS.push(y);
-if (TICKS[TICKS.length - 1] < CURRENT_AH) TICKS.push(CURRENT_AH);
+const TICKS = Array.from({length: CURRENT_AH}, (_, i) => i + 1);
 
-function tickLabel(n) {
-  if (n < 1000) return String(n);
-  const k = n / 1000;
-  return (Number.isInteger(k) ? k : k.toFixed(1)) + 'k';
-}
+function tickLabel(n) { return String(n); }
 
 /* ══════════════════════════════════════════════════════════
    LEAFLET MAP MANAGER (imperative)
@@ -1708,6 +1723,16 @@ function App() {
         })()}
 
         <div className="yr-circles-wrap">
+          <input
+            type="range" className="yr-scrubber"
+            min={0} max={TICKS.length - WIN} value={winStart}
+            style={{'--pct': Math.round(winStart / (TICKS.length - WIN) * 100)}}
+            onChange={e => {
+              setWinStart(Number(e.target.value));
+              const n = TICKS[Number(e.target.value)];
+              if (n) setYear(n);
+            }}
+          />
           <div className="yr-circles"
             onMouseDown={e => { dragX.current = e.clientX; dragged.current = false; setIsSliding(true); }}
             onMouseMove={e => {
@@ -1759,7 +1784,7 @@ function App() {
                   {i > 0 && <div className={`yr-dash${n <= year ? ' passed' : ''}`}/>}
                   <div
                     className={`yr-dot${n === year ? ' active' : ''}${n === CURRENT_AH ? ' current-ah' : ''}`}
-                    style={{fontSize: n < 100 ? '.65rem' : n < 1000 ? '.5rem' : '.44rem'}}
+                    style={{fontSize: n < 10 ? '.65rem' : n < 100 ? '.6rem' : n < 1000 ? '.48rem' : '.4rem'}}
                     onClick={() => {
                       if (dragged.current) return;
                       setYear(n);
