@@ -219,7 +219,11 @@ body {
   background:#d4a853; border-color:#d4a853; color:#0b0907;
   box-shadow:0 0 10px rgba(212,168,83,.55);
 }
-.yr-dash { width:14px; height:0; flex-shrink:0; border-top:2px dashed #1e1808; }
+.yr-dot.current-ah {
+  border-color:#6a9a53; color:#6a9a53;
+}
+.yr-dot.current-ah.active { background:#6a9a53; border-color:#6a9a53; color:#0b0907; }
+.yr-dash { width:10px; height:0; flex-shrink:0; border-top:2px dashed #1e1808; }
 .yr-dash.passed { border-color:#3a2a10; }
 
 /* Year popup */
@@ -808,6 +812,19 @@ const EVENTS = [
 ];
 
 const ALL_FILTER_TYPES = ['battle','treaty','journey','conquest','event'];
+
+// Full timeline ticks: every year 1-35, then every 10 years to 1447
+const CURRENT_AH = 1447;
+const TICKS = [];
+for (let y = 1; y <= 35; y++) TICKS.push(y);
+for (let y = 40; y <= 1440; y += 10) TICKS.push(y);
+if (TICKS[TICKS.length - 1] < CURRENT_AH) TICKS.push(CURRENT_AH);
+
+function tickLabel(n) {
+  if (n < 1000) return String(n);
+  const k = n / 1000;
+  return (Number.isInteger(k) ? k : k.toFixed(1)) + 'k';
+}
 
 /* ══════════════════════════════════════════════════════════
    LEAFLET MAP MANAGER (imperative)
@@ -1514,7 +1531,7 @@ function App() {
   const [popYear,    setPopYear]    = useState(null);
   const [showDetail,  setShowDetail]  = useState(false);
   const [pageEvId,    setPageEvId]    = useState(null);
-  const [winStart,   setWinStart]   = useState(1);
+  const [winStart,   setWinStart]   = useState(0);   // index into TICKS
   const WIN = 10;
   const [slideOffset, setSlideOffset] = useState(0);
   const [isSliding,   setIsSliding]   = useState(false);
@@ -1539,13 +1556,11 @@ function App() {
 
   // Slide window to keep current year visible
   useEffect(() => {
-    if (year < winStart) setWinStart(Math.max(1, year - 2));
-    else if (year >= winStart + WIN) setWinStart(Math.min(36 - WIN, year - WIN + 3));
+    const idx = TICKS.indexOf(year);
+    if (idx < 0) return;
+    if (idx < winStart) setWinStart(Math.max(0, idx - 2));
+    else if (idx >= winStart + WIN) setWinStart(Math.min(TICKS.length - WIN, idx - WIN + 3));
   }, [year]);
-
-  const shiftWin = (dir) => {
-    setWinStart(prev => Math.max(1, Math.min(36 - WIN, prev + dir * WIN)));
-  };
 
   // Derived
   const era     = ERAS.find(e => year >= e.from && year < e.to) || ERAS[ERAS.length-1];
@@ -1555,13 +1570,12 @@ function App() {
   // Auto-play
   const startPlay = useCallback(() => {
     setIsPlaying(true);
-    let y = year >= 35 ? 1 : year;
-    if (y === year && y < 35) y = year;
-    else if (y >= 35) { setYear(1); y = 1; }
+    let idx = TICKS.indexOf(year);
+    if (idx < 0 || idx >= TICKS.length - 1) { idx = 0; setYear(TICKS[0]); }
     playTimer.current = setInterval(() => {
-      y++;
-      setYear(y);
-      if (y >= 35) { clearInterval(playTimer.current); setIsPlaying(false); }
+      idx++;
+      setYear(TICKS[idx]);
+      if (idx >= TICKS.length - 1) { clearInterval(playTimer.current); setIsPlaying(false); }
     }, 550);
   }, [year]);
 
@@ -1706,14 +1720,14 @@ function App() {
               if (dragX.current === null) return;
               const dx = e.clientX - dragX.current;
               const shift = -Math.round(dx / dotUnitRef.current);
-              setWinStart(prev => Math.max(1, Math.min(36 - WIN, prev + shift)));
+              setWinStart(prev => Math.max(0, Math.min(TICKS.length - WIN, prev + shift)));
               setSlideOffset(0); setIsSliding(false); dragX.current = null;
             }}
             onMouseLeave={e => {
               if (dragX.current === null) return;
               const dx = e.clientX - dragX.current;
               const shift = -Math.round(dx / dotUnitRef.current);
-              setWinStart(prev => Math.max(1, Math.min(36 - WIN, prev + shift)));
+              setWinStart(prev => Math.max(0, Math.min(TICKS.length - WIN, prev + shift)));
               setSlideOffset(0); setIsSliding(false); dragX.current = null;
             }}
             onTouchStart={e => { dragX.current = e.touches[0].clientX; dragged.current = false; setIsSliding(true); }}
@@ -1728,7 +1742,7 @@ function App() {
               if (dragX.current === null) return;
               const dx = e.changedTouches[0].clientX - dragX.current;
               const shift = -Math.round(dx / dotUnitRef.current);
-              setWinStart(prev => Math.max(1, Math.min(36 - WIN, prev + shift)));
+              setWinStart(prev => Math.max(0, Math.min(TICKS.length - WIN, prev + shift)));
               setSlideOffset(0); setIsSliding(false); dragX.current = null;
             }}
           >
@@ -1736,22 +1750,23 @@ function App() {
               ref={circlesInnerRef}
               className="yr-circles-inner"
               style={{
-                transform: `translateX(${-(winStart - 1) * dotUnitRef.current + slideOffset}px)`,
+                transform: `translateX(${-winStart * dotUnitRef.current + slideOffset}px)`,
                 transition: isSliding ? 'none' : 'transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)',
               }}
             >
-              {Array.from({length:35},(_,i) => i+1).map((n, i) => (
+              {TICKS.map((n, i) => (
                 <div key={n} className="yr-dot-wrap">
                   {i > 0 && <div className={`yr-dash${n <= year ? ' passed' : ''}`}/>}
                   <div
-                    className={`yr-dot${n === year ? ' active' : ''}`}
+                    className={`yr-dot${n === year ? ' active' : ''}${n === CURRENT_AH ? ' current-ah' : ''}`}
+                    style={{fontSize: n < 100 ? '.65rem' : n < 1000 ? '.5rem' : '.44rem'}}
                     onClick={() => {
                       if (dragged.current) return;
                       setYear(n);
                       if (popYear === n) { if (window._flyToDefault) window._flyToDefault(); }
                       else setPopYear(n);
                     }}
-                  >{n}</div>
+                  >{tickLabel(n)}</div>
                 </div>
               ))}
             </div>
