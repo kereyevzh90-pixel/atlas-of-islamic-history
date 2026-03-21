@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سيرة Sirah Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital@1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #0f0d08;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 3vw, 32px);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* ── CARD ── */
+.card {
+  width: 100%;
+  max-width: 960px;
+  background: #1a1610;
+  border: 1.5px solid #3a2e18;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 30px 90px rgba(0,0,0,0.85);
+}
+
+/* ── HEADER ── */
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 22px 13px;
+}
+.title-group { display: flex; align-items: center; gap: 14px; }
+.arabic-title {
+  font-size: 2rem;
+  color: #d4a853;
+  font-family: 'Amiri', 'Scheherazade New', 'Arial Unicode MS', serif;
+  line-height: 1;
+  letter-spacing: 1px;
+}
+.latin-title {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.72rem;
+  letter-spacing: 3.5px;
+  color: #8a7040;
+  text-transform: uppercase;
+  font-weight: 400;
+  margin-top: 2px;
+}
+.header-right { display: flex; align-items: center; gap: 8px; }
+.spread-btn {
+  background: transparent;
+  border: 1.5px solid #d4a853;
+  color: #d4a853;
+  border-radius: 20px;
+  padding: 7px 18px;
+  font-size: 0.66rem;
+  letter-spacing: 2.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: uppercase;
+  font-family: 'Cinzel', sans-serif;
+  transition: background 0.2s;
+}
+.spread-btn:hover { background: rgba(212,168,83,0.1); }
+.spread-btn.playing { background: rgba(212,168,83,0.18); }
+.spread-icon { font-size: 0.75rem; }
+.lang-pair { display: flex; gap: 4px; }
+.lbtn {
+  background: transparent;
+  border: 1px solid #352b18;
+  color: #6a5428;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: all 0.2s;
+}
+.lbtn.active { border-color: #d4a853; color: #d4a853; background: rgba(212,168,83,0.08); }
+
+/* ── MAP ── */
+.map-wrapper {
+  width: 100%;
+  position: relative;
+  padding-top: 56.25%; /* 16:9 */
+  border-top: 1px solid #2a2010;
+  border-bottom: 1px solid #2a2010;
+  overflow: hidden;
+}
+@media (max-width: 520px) {
+  .map-wrapper { padding-top: 75%; } /* 4:3 on mobile */
+}
+#map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.leaflet-container { background: #080604; }
+.leaflet-tile-pane {
+  filter: brightness(0.58) saturate(0.35) contrast(1.15);
+}
+/* Polygon fade & stroke-settle transitions */
+.leaflet-overlay-pane svg path {
+  transition: fill-opacity .65s ease-in-out, stroke-opacity .45s ease-in-out,
+              stroke-width .5s ease-in-out, filter .55s ease-in-out;
+}
+
+
+.map-play-btn {
+  position: absolute; bottom: 18px; right: 18px; z-index: 1000;
+  width: 54px; height: 54px; border-radius: 50%;
+  background: #d4a853; border: none; color: #14100b;
+  font-size: 1.3rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 22px rgba(212,168,83,0.5);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.map-play-btn:hover { transform: scale(1.07); box-shadow: 0 6px 30px rgba(212,168,83,0.65); }
+
+/* ── CONTROLS ── */
+.controls {
+  padding: 22px 28px 26px;
+}
+.year-row { text-align: center; margin-bottom: 3px; }
+.year-num {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 3.4rem;
+  font-weight: 700;
+  color: #d4a853;
+  letter-spacing: 6px;
+  line-height: 1;
+}
+.era-row {
+  text-align: center;
+  font-style: italic;
+  color: #7a6030;
+  font-size: 0.88rem;
+  margin-bottom: 22px;
+  letter-spacing: 0.3px;
+  font-family: 'Cormorant Garamond', 'Georgia', serif;
+}
+.era-star { color: #d4a853; font-style: normal; }
+
+/* Slider */
+.slider-block { margin-bottom: 20px; }
+#year-slider {
+  width: 100%; -webkit-appearance: none;
+  height: 2px; background: #352b18; outline: none;
+  cursor: pointer; border-radius: 1px; display: block; margin-bottom: 10px;
+}
+#year-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 22px; height: 22px;
+  border-radius: 50%; background: #d4a853; cursor: pointer;
+  border: 2.5px solid #1a1610; box-shadow: 0 0 9px rgba(212,168,83,0.6);
+}
+.ticks {
+  display: flex; justify-content: space-between;
+  font-size: 0.64rem; color: #4a3820; letter-spacing: 0.2px;
+}
+
+/* Filters */
+.filter-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.f-btn {
+  background: transparent; border: 1.5px solid; border-radius: 20px;
+  padding: 6px 14px; font-size: 0.64rem; letter-spacing: 1.8px;
+  text-transform: uppercase; cursor: pointer; transition: all 0.18s;
+  display: flex; align-items: center; gap: 7px; font-family: 'Cinzel', sans-serif;
+}
+.f-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.f-btn.all-btn   { border-color:#d4a853; color:#d4a853; }
+.f-btn.all-btn.active { background:rgba(212,168,83,.15); }
+.f-btn[data-type="battle"]   { border-color:#8a2018; color:#d07070; }
+.f-btn[data-type="treaty"]   { border-color:#164a7a; color:#5090c8; }
+.f-btn[data-type="journey"]  { border-color:#7a5a08; color:#c09830; }
+.f-btn[data-type="conquest"] { border-color:#0a4820; color:#38a860; }
+.f-btn[data-type="event"]    { border-color:#4a1068; color:#9050b8; }
+.f-btn.active[data-type="battle"]   { background:rgba(192,57,43,.22); }
+.f-btn.active[data-type="treaty"]   { background:rgba(36,113,163,.22); }
+.f-btn.active[data-type="journey"]  { background:rgba(212,172,13,.22); }
+.f-btn.active[data-type="conquest"] { background:rgba(30,132,73,.22); }
+.f-btn.active[data-type="event"]    { background:rgba(125,60,152,.22); }
+
+/* ── EVENT INFO CARD (bottom panel inside map) ── */
+#event-overlay {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  max-height: 42%;
+  background: rgba(8,6,3,0.96);
+  border-top: 1px solid #2a2010;
+  z-index: 2000;
+  overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 0.32s cubic-bezier(0.4,0,0.2,1);
+  backdrop-filter: blur(10px);
+}
+#event-overlay.open { transform: translateY(0); }
+.overlay-inner { padding: 12px 14px 16px; position: relative; }
+.overlay-close {
+  position: absolute; top: 10px; right: 10px;
+  width: 24px; height: 24px; border-radius: 50%; background: #1e1a10;
+  border: 1px solid #352b18; color: #6a5828; cursor: pointer;
+  font-size: 0.85rem; display: flex; align-items: center; justify-content: center;
+  transition: color 0.2s, border-color 0.2s;
+}
+.overlay-close:hover { color: #d4a853; border-color: #5a4828; }
+/* Card content */
+.ev-hd  { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 7px; padding-right: 28px; }
+.ev-icon{ font-size: 1.6rem; flex-shrink: 0; line-height: 1; margin-top: 2px; }
+.ev-ttl { font-size: 0.9rem; font-weight: 700; color: #f0d090; line-height: 1.3; }
+.ev-ar  { font-size: 0.9rem; color: #6a5828; direction: rtl; margin-top: 2px; }
+.ev-badge { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 0.56rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+.ev-meta { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.ev-yr   { font-size: 0.7rem; color: #d4a853; font-weight: 600; letter-spacing: 0.3px; }
+.ev-sep  { color: #352b18; font-size: 0.65rem; }
+.ev-ce   { font-size: 0.68rem; color: #5a4828; }
+.ev-place{ font-size: 0.68rem; color: #4a3820; font-style: italic; }
+.ev-sum  { font-size: 0.77rem; line-height: 1.55; color: #8a7048; margin: 0; }
+
+/* Leaflet */
+.leaflet-popup-content-wrapper { background:#1a1610; border:1px solid #352b18; color:#e0c88a; border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.7); }
+.leaflet-popup-tip { background:#1a1610; }
+.leaflet-popup-content { margin:8px 12px; }
+.pp-title { font-size:0.82rem; font-weight:600; color:#f0d090; margin-bottom:3px; }
+.pp-type  { font-size:0.68rem; color:#7a6030; }
+.pp-year  { font-size:0.72rem; color:#d4a853; margin-top:2px; }
+.leaflet-popup-close-button { color:#7a6030 !important; }
+.leaflet-control-zoom a { background:#1a1610 !important; border-color:#352b18 !important; color:#8a7040 !important; }
+.leaflet-control-zoom a:hover { background:#2a2010 !important; color:#d4a853 !important; }
+
+/* Region labels */
+.rl { pointer-events:none; background:transparent; border:none; box-shadow:none; }
+.rl-t {
+  font-size:0.58rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
+  white-space:nowrap; text-shadow:0 1px 4px #000,0 0 8px #000,1px 1px 0 #000,-1px -1px 0 #000;
+  font-family: 'Cinzel', sans-serif;
+}
+
+/* Empire polygons via leaflet — style in JS */
+/* Legend */
+#legend {
+  position: absolute; bottom: 18px; left: 14px; z-index: 500;
+  background: rgba(10,8,4,0.88); border: 1px solid #2a2010;
+  border-radius: 8px; padding: 9px 12px; backdrop-filter: blur(4px);
+}
+.leg-t { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.8px; color: #4a3820; margin-bottom: 7px; font-family:'Cinzel',sans-serif; }
+.li { display:flex; align-items:center; gap:7px; margin-bottom:5px; font-size:0.68rem; color:#8a7040; cursor:pointer; transition:opacity 0.2s; }
+.li:last-child { margin-bottom:0; }
+.ls { width:12px; height:12px; border-radius:2px; flex-shrink:0; }
+.li.off { opacity:0.35; }
+
+/* Marker dots */
+@keyframes mdotPulse {
+  0%,100% { box-shadow: 0 0 5px var(--mc); }
+  50%      { box-shadow: 0 0 13px var(--mc), 0 0 22px var(--mc); }
+}
+.mdot {
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,.4);
+  animation: mdotPulse 2.4s ease-in-out infinite;
+  cursor: pointer;
+  transition: transform .15s;
+}
+.mdot:hover { transform: scale(1.4); }
+@keyframes selRipple {
+  0%   { box-shadow: 0 0 0 0   rgba(212,168,83,.85), 0 0 18px var(--mc); }
+  65%  { box-shadow: 0 0 0 11px rgba(212,168,83,0),  0 0 24px var(--mc); }
+  100% { box-shadow: 0 0 0 0   rgba(212,168,83,0),   0 0 18px var(--mc); }
+}
+.mdot.sel {
+  border: 2.5px solid rgba(255,255,255,.95) !important;
+  transform: scale(1.65);
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+  animation: selRipple 1.7s ease-out infinite !important;
+}
+</style>
+</head>
+<body>
+
+<div class="card" style="position:relative;">
+
+  <!-- HEADER -->
+  <div class="card-header">
+    <div class="title-group">
+      <div class="arabic-title">سيرة</div>
+      <div class="latin-title">Sirah Map</div>
+    </div>
+    <div class="header-right">
+      <button class="spread-btn" id="spread-btn" onclick="toggleSpread()">
+        <span class="spread-icon" id="spread-icon">▶</span>
+        <span id="spread-label">Spread</span>
+      </button>
+      <div class="lang-pair">
+        <button class="lbtn active" id="lb-en" onclick="setLang('en')">EN</button>
+        <button class="lbtn" id="lb-ru" onclick="setLang('ru')">RU</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div class="map-wrapper">
+    <div id="map"></div>
+
+    <!-- Legend -->
+    <div id="legend">
+      <div class="leg-t" id="leg-title">Empires</div>
+      <div class="li" id="li-islamic" onclick="toggleLayer('islamic')">
+        <div class="ls" style="background:rgba(26,120,60,0.7);border:1px solid #2d7a45;"></div>
+        <span id="li-islamic-t">Islamic State</span>
+      </div>
+      <div class="li" id="li-byzantine" onclick="toggleLayer('byzantine')">
+        <div class="ls" style="background:rgba(50,80,180,0.6);border:1px solid #4466cc;"></div>
+        <span id="li-byzantine-t">Byzantine</span>
+      </div>
+      <div class="li" id="li-sassanid" onclick="toggleLayer('sassanid')">
+        <div class="ls" style="background:rgba(180,70,20,0.6);border:1px solid #c04a18;"></div>
+        <span id="li-sassanid-t">Sassanid</span>
+      </div>
+      <div class="li" id="li-arabia" onclick="toggleLayer('arabia')">
+        <div class="ls" style="background:rgba(160,120,10,0.5);border:1px solid #c8a020;"></div>
+        <span id="li-arabia-t">Free Arabia</span>
+      </div>
+      <hr style="border:none;border-top:1px solid #2a2010;margin:6px 0 5px;">
+      <div class="li" style="cursor:default;">
+        <svg width="18" height="6" viewBox="0 0 18 6"><line x1="0" y1="3" x2="18" y2="3" stroke="#D4AC0D" stroke-width="2"/></svg>
+        <span style="color:#D4AC0D;" id="rl-journey">Journey</span>
+      </div>
+      <div class="li" style="cursor:default;">
+        <svg width="18" height="6" viewBox="0 0 18 6"><line x1="0" y1="3" x2="18" y2="3" stroke="#C0392B" stroke-width="2" stroke-dasharray="12 7"/></svg>
+        <span style="color:#C0392B;" id="rl-expedition">Expedition</span>
+      </div>
+      <div class="li" style="cursor:default;">
+        <svg width="18" height="6" viewBox="0 0 18 6"><line x1="0" y1="3" x2="18" y2="3" stroke="#1E8449" stroke-width="2" stroke-dasharray="4 5"/></svg>
+        <span style="color:#1E8449;" id="rl-conquest">Conquest</span>
+      </div>
+      <div class="li" style="cursor:default;">
+        <svg width="18" height="6" viewBox="0 0 18 6"><line x1="0" y1="3" x2="18" y2="3" stroke="#2471A3" stroke-width="2" stroke-dasharray="2 7"/></svg>
+        <span style="color:#2471A3;" id="rl-diplomatic">Diplomatic</span>
+      </div>
+    </div>
+
+    <!-- Play button -->
+    <button class="map-play-btn" id="map-play-btn" onclick="toggleSpread()">▶</button>
+
+    <!-- Event info card -->
+    <div id="event-overlay">
+      <div class="overlay-inner">
+        <button class="overlay-close" onclick="closeOverlay()">×</button>
+        <div id="overlay-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls">
+    <div class="year-row">
+      <span class="year-num" id="year-num">35 AH</span>
+    </div>
+    <div class="era-row" id="era-row">Era of the Prophet <span class="era-star">★</span></div>
+
+    <div class="slider-block">
+      <input type="range" id="year-slider" min="1" max="35" step="1" value="35">
+      <div class="ticks">
+        <span>1</span><span>5</span><span>10</span><span>15</span><span>20</span><span>25</span><span>30</span><span>35</span>
+      </div>
+    </div>
+
+    <div class="filter-row" id="filter-row">
+      <button class="f-btn all-btn active" id="f-all" onclick="setAllFilter()">
+        <div class="f-dot" style="background:#d4a853;"></div>
+        <span id="fl-all">All</span>
+      </button>
+      <button class="f-btn active" data-type="battle" onclick="toggleFilter('battle')">
+        <div class="f-dot" style="background:#C0392B;"></div>
+        <span class="fl-t" data-type="battle">Battles</span>
+      </button>
+      <button class="f-btn active" data-type="treaty" onclick="toggleFilter('treaty')">
+        <div class="f-dot" style="background:#2471A3;"></div>
+        <span class="fl-t" data-type="treaty">Treaties</span>
+      </button>
+      <button class="f-btn active" data-type="journey" onclick="toggleFilter('journey')">
+        <div class="f-dot" style="background:#D4AC0D;"></div>
+        <span class="fl-t" data-type="journey">Journeys</span>
+      </button>
+      <button class="f-btn active" data-type="conquest" onclick="toggleFilter('conquest')">
+        <div class="f-dot" style="background:#1E8449;"></div>
+        <span class="fl-t" data-type="conquest">Conquests</span>
+      </button>
+      <button class="f-btn active" data-type="event" onclick="toggleFilter('event')">
+        <div class="f-dot" style="background:#7D3C98;"></div>
+        <span class="fl-t" data-type="event">Events</span>
+      </button>
+    </div>
+  </div>
+
+</div><!-- /card -->
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  HISTORICAL OVERLAY DATA
+// ════════════════════════════════════════════════════════════
+const BYZANTINE_POLYS=[[[42,26.5],[41.5,30],[42,35],[42,44],[38.5,44],[37.5,42],[36.5,40.5],[34.5,37.5],[33.5,36.5],[32,35.5],[31.5,35],[29.5,34.5],[28.8,34],[28.5,32.5],[29.5,31.5],[30.5,30.5],[31,28.5],[31.5,27],[32,26],[36.5,26.5]],[[31.5,25],[22.5,25],[22,29],[23.5,34.5],[29,35.5],[30.5,34],[31.5,33]]];
+const SASSANID_POLYS=[[[38.5,44],[40,46],[40.5,52],[40,57],[38,62],[35.5,63.5],[29,62],[25,60],[22.5,57.5],[22.5,52],[24,49.5],[26,47],[29.5,46],[29.5,44],[34,44]]];
+const ARABIA_POLYS=[[[29.5,35],[29.5,47],[26,49.5],[22.5,55.5],[17.5,55.5],[13,52],[12,44],[15,42],[18,38],[20,36.5],[23,36]]];
+
+const ISLAMIC_SNAPSHOTS=[
+  {year:1, polys:[[[27,37],[24,36.5],[21.5,38],[20.5,40],[21,43],[24,42.5],[27,41]]]},
+  {year:6, polys:[[[29,36],[26,36],[23.5,36.5],[21.5,38],[20,39.5],[20,43],[22.5,44],[26.5,43],[29,42]]]},
+  {year:8, polys:[[[29.5,35],[26,35.5],[21,37],[18,38.5],[18,43.5],[21,45],[25,44.5],[28.5,43.5],[29.5,42]]]},
+  {year:9, polys:[[[29.5,35],[26,35.5],[21,37],[18,38.5],[18,43.5],[21,45],[25,44.5],[28.5,43.5],[29.5,42]],[[30.5,35.5],[29.5,35],[29.5,42],[30.5,42]]]},
+  {year:13,polys:[[[29.5,35],[26,36],[22,37],[18,38.5],[15,42],[12,44],[12,52],[17.5,57],[22.5,59.5],[26,57],[29.5,50]]]},
+  {year:15,polys:[[[37.5,36],[31.5,35],[29.5,35],[26,36],[22,37],[18,38.5],[15,42],[12,44],[12,52],[17.5,57],[22.5,59.5],[26,57],[29.5,50],[38,50],[38,44],[37.5,44]]]},
+  {year:16,polys:[[[37.5,36],[31.5,35],[29.5,35],[26,36],[22,37],[18,38.5],[15,42],[12,44],[12,52],[17.5,57],[22.5,59.5],[26,57],[29.5,50],[38,50],[38,44],[37.5,44]]]},
+  {year:20,polys:[[[37.5,36],[31.5,35],[29.5,35],[26,36],[22,37],[18,38.5],[15,42],[12,44],[12,52],[17.5,57],[22.5,59.5],[26,57],[29.5,50],[38,50],[38,44],[37.5,44]],[[31.5,25],[22.5,25],[22,29],[23.5,34.5],[29,35.5],[31.5,34]]]},
+  {year:25,polys:[[[37.5,36],[31.5,35],[29.5,35],[26,36],[22,37],[18,38.5],[15,42],[12,44],[12,52],[17.5,57],[22.5,59.5],[26,57],[29.5,50],[38,50],[38,44],[37.5,44]],[[31.5,25],[22.5,25],[22,29],[23.5,34.5],[29,35.5],[31.5,34]],[[32.5,13],[22.5,13],[22.5,25],[31.5,25],[32.5,20]],[[38,50],[38,60],[30,60],[24,57],[26,57],[29.5,50]]]}
+];
+
+const REGION_LABELS=[
+  {lat:39,lng:33,  text:{en:'ANATOLIA',    ru:'АНАТОЛИЯ'},   color:'#8090c8'},
+  {lat:35,lng:36.5,text:{en:'LEVANT',      ru:'ЛЕВАНТ'},     color:'#8090c8'},
+  {lat:30,lng:30.5,text:{en:'EGYPT',       ru:'ЕГИПЕТ'},     color:'#8090c8'},
+  {lat:37,lng:53,  text:{en:'PERSIA',      ru:'ПЕРСИЯ'},     color:'#c07040'},
+  {lat:37,lng:67,  text:{en:'KHORASAN',    ru:'ХОРАСАН'},    color:'#c07040'},
+  {lat:33,lng:44.5,text:{en:'MESOPOTAMIA', ru:'МЕСОПОТАМИЯ'},color:'#c07040'},
+  {lat:23.5,lng:46,text:{en:'ARABIA',      ru:'АРАВИЯ'},     color:'#b09838'},
+  {lat:24,lng:39.8,text:{en:'HEJAZ',       ru:'ХИДЖАЗ'},     color:'#b09838'},
+  {lat:27,lng:44,  text:{en:'NAJD',        ru:'НЕДЖД'},      color:'#a08830'},
+  {lat:15.5,lng:47,text:{en:'YEMEN',       ru:'ЙЕМЕН'},      color:'#a08830'},
+];
+
+// ════════════════════════════════════════════════════════════
+//  EVENTS DATA
+// ════════════════════════════════════════════════════════════
+const ERAS=[{from:1,to:11,label:"Era of the Prophet ﷺ",labelRu:"Эпоха Пророка ﷺ"},{from:11,to:13,label:"Caliphate of Abu Bakr",labelRu:"Халифат Абу Бакра"},{from:13,to:23,label:"Caliphate of Umar",labelRu:"Халифат Умара"},{from:23,to:36,label:"Caliphate of Uthman",labelRu:"Халифат Усмана"}];
+const TYPES={battle:{color:"#C0392B",icon:"⚔️",label:"Battle",labelRu:"Битва"},treaty:{color:"#2471A3",icon:"📜",label:"Treaty",labelRu:"Договор"},journey:{color:"#D4AC0D",icon:"🌙",label:"Journey",labelRu:"Поход"},conquest:{color:"#1E8449",icon:"🏹",label:"Conquest",labelRu:"Завоевание"},event:{color:"#7D3C98",icon:"◆",label:"Event",labelRu:"Событие"}};
+const LOCS={mecca:{name:"Mecca",nameRu:"Мекка",lat:21.4225,lng:39.8262},medina:{name:"Medina",nameRu:"Медина",lat:24.4672,lng:39.6151},badr:{name:"Badr",nameRu:"Бадр",lat:23.734,lng:38.792},uhud:{name:"Uhud",nameRu:"Ухуд",lat:24.51,lng:39.699},hudaybiyyah:{name:"Hudaybiyyah",nameRu:"Худайбия",lat:21.445,lng:39.565},khaybar:{name:"Khaybar",nameRu:"Хайбар",lat:25.696,lng:39.289},tabuk:{name:"Tabuk",nameRu:"Табук",lat:28.3838,lng:36.5662},arafat:{name:"Arafat",nameRu:"Арафат",lat:21.3549,lng:39.9842},yamama:{name:"Yamama",nameRu:"Ямама",lat:24.088,lng:47.322},damascus:{name:"Damascus",nameRu:"Дамаск",lat:33.5102,lng:36.2913},yarmouk:{name:"Yarmouk",nameRu:"Ярмук",lat:32.676,lng:35.923},qadisiyyah:{name:"Qadisiyyah",nameRu:"Кадисийя",lat:31.697,lng:44.477},jerusalem:{name:"Jerusalem",nameRu:"Иерусалим",lat:31.7683,lng:35.2137},alexandria:{name:"Alexandria",nameRu:"Александрия",lat:31.199,lng:29.919}};
+const EVENTS=[
+  {id:"hijra",year:1,yearCE:622,type:"journey",loc:"medina",icon:"🌙",title:{en:"Al-Hijra — Migration to Medina",ru:"Хиджра — переселение в Медину",ar:"الهجرة النبوية"},date:{h:"1 AH",g:"622 CE"},place:{en:"Mecca → Medina",ru:"Мекка → Медина"},summary:{en:"The Prophet ﷺ and his companions migrated from Mecca to Medina, founding the first Muslim state and marking the start of the Islamic calendar.",ru:"Пророк и его сподвижники переселились из Мекки в Медину, основав первое мусульманское государство."},route:{from:"mecca",to:"medina"},participants:[{name:"Prophet Muhammad ﷺ",role:"leader"},{name:"Abu Bakr al-Siddiq",role:"companion"},{name:"Ali ibn Abi Talib",role:"decoy in Mecca"}],consequences:["The Hijri calendar begins from this event","First Muslim community-state established","Construction of Al-Masjid an-Nabawi began"],quran:"22:39",sources:["Sahih al-Bukhari","Sirah Ibn Hisham"]},
+  {id:"masjid_nabawi",year:1,yearCE:622,type:"event",loc:"medina",icon:"🕌",title:{en:"Building of Al-Masjid an-Nabawi",ru:"Строительство Мечети Пророка",ar:"بناء المسجد النبوي"},date:{h:"1 AH",g:"622 CE"},place:{en:"Medina",ru:"Медина"},summary:{en:"The Prophet built the first mosque on land purchased from two orphans — the heart of the new Islamic state.",ru:"Первая мечеть, ставшая сердцем нового государства."},consequences:["First purpose-built mosque in Islam","The Prophet is buried here","Today one of the largest mosques in the world"],sources:["Sahih al-Bukhari","Sirah Ibn Hisham"]},
+  {id:"brotherhood",year:1,yearCE:622,type:"event",loc:"medina",icon:"🤝",title:{en:"Brotherhood: Muhajirun & Ansar",ru:"Братство мухаджиров и ансаров",ar:"المؤاخاة"},date:{h:"1 AH",g:"622 CE"},place:{en:"Medina",ru:"Медина"},summary:{en:"The Prophet established bonds of brotherhood between Meccan emigrants and Medinan helpers.",ru:"Установление братских уз между переселенцами и помощниками."},consequences:["Unity between two communities","Material support to emigrants","Foundation of the Ummah"],sources:["Sahih al-Bukhari"]},
+  {id:"badr",year:2,yearCE:624,type:"battle",loc:"badr",icon:"⚔️",title:{en:"Battle of Badr",ru:"Битва при Бадре",ar:"غزوة بدر الكبرى"},date:{h:"17 Ramadan, 2 AH",g:"March 624 CE"},place:{en:"Wells of Badr",ru:"Колодцы Бадра"},summary:{en:"313 Muslims defeated a Qurayshi army of ~1,000. The first and most decisive Muslim military victory.",ru:"313 мусульман разбили армию курайшитов ~1000 человек."},forces:{m:{n:313,cmd:"Prophet Muhammad ﷺ"},e:{n:1000,cmd:"Abu Jahl",f:"Quraysh"}},casualties:{m:{martyred:14},e:{killed:70,captured:70}},participants:[{name:"Prophet Muhammad ﷺ",role:"commander"},{name:"Ali ibn Abi Talib",role:"warrior"},{name:"Hamza ibn Abdul-Muttalib",role:"warrior"},{name:"Abu Jahl",role:"Quraysh chief, slain"}],consequences:["First military victory","Prisoners humanely treated","Mass morale boost"],quran:"3:123",sources:["Sahih al-Bukhari","Sirah Ibn Hisham"]},
+  {id:"qibla",year:2,yearCE:624,type:"event",loc:"medina",icon:"🕋",title:{en:"Change of Qibla to Mecca",ru:"Смена киблы в сторону Мекки",ar:"تحويل القبلة"},date:{h:"2 AH",g:"624 CE"},place:{en:"Medina",ru:"Медина"},summary:{en:"The direction of prayer was changed from Jerusalem to the Kaaba in Mecca.",ru:"Направление молитвы изменено с Иерусалима на Каабу."},consequences:["Kaaba became focal point of all Muslim prayer","Distinct identity of Islam affirmed"],quran:"2:144",sources:["Sahih al-Bukhari"]},
+  {id:"uhud",year:3,yearCE:625,type:"battle",loc:"uhud",icon:"⚔️",title:{en:"Battle of Uhud",ru:"Битва при Ухуде",ar:"غزوة أحد"},date:{h:"3 AH",g:"625 CE"},place:{en:"Mount Uhud, Medina",ru:"Гора Ухуд, Медина"},summary:{en:"Muslims initially prevailed, but archers abandoned their posts. The tide turned — 70 martyred.",ru:"Мусульмане поначалу побеждали, но лучники покинули позиции. 70 мучеников."},forces:{m:{n:700,cmd:"Prophet Muhammad ﷺ"},e:{n:3000,cmd:"Abu Sufyan",f:"Quraysh"}},casualties:{m:{martyred:70},e:{killed:22}},participants:[{name:"Prophet Muhammad ﷺ",role:"commander, wounded"},{name:"Hamza ibn Abdul-Muttalib",role:"martyr"},{name:"Khalid ibn al-Walid",role:"Quraysh cavalry (pre-Islam)"}],consequences:["70 martyred including Hamza","Prophet wounded","Lesson: obedience above all"],quran:"3:152",sources:["Sahih al-Bukhari","Sirah Ibn Hisham"]},
+  {id:"trench",year:5,yearCE:627,type:"battle",loc:"medina",icon:"🏰",title:{en:"Battle of the Trench",ru:"Битва у Рва (Хандак)",ar:"غزوة الخندق"},date:{h:"5 AH",g:"627 CE"},place:{en:"Medina (north)",ru:"Медина (север)"},summary:{en:"A coalition of 10,000 besieged Medina. Muslims dug a trench — Salman al-Farisi's strategy. Coalition withdrew.",ru:"Коалиция 10 000 осадила Медину. Мусульмане вырыли ров — идея Салмана."},forces:{m:{n:3000,cmd:"Prophet Muhammad ﷺ"},e:{n:10000,cmd:"Abu Sufyan",f:"Ahzab coalition"}},consequences:["Coalition withdrew after 27 days","Last major Quraysh offensive","Prophet declared: 'Now we march against them'"],quran:"33:10",sources:["Sahih al-Bukhari"]},
+  {id:"hudaybiyyah",year:6,yearCE:628,type:"treaty",loc:"hudaybiyyah",icon:"📜",title:{en:"Treaty of Hudaybiyyah",ru:"Договор при Худайбии",ar:"صلح الحديبية"},date:{h:"6 AH",g:"628 CE"},place:{en:"Hudaybiyyah, near Mecca",ru:"Худайбия, близ Мекки"},summary:{en:"A 10-year peace with Quraysh — seemingly unfavorable, yet Allah called it a clear victory.",ru:"10-летний мир с курайшитами — названный Аллахом явной победой."},terms:["No war for 10 years","Muslims return this year without Umrah","Those fleeing Quraysh shall be returned"],consequences:["Quraysh recognized Muslim state","More converts in 2 years than in 18","Khalid and Amr ibn al-As embraced Islam"],quran:"48:1",sources:["Sahih al-Bukhari"]},
+  {id:"khaybar",year:7,yearCE:628,type:"battle",loc:"khaybar",icon:"⚔️",title:{en:"Battle of Khaybar",ru:"Битва при Хайбаре",ar:"غزوة خيبر"},date:{h:"7 AH",g:"628 CE"},place:{en:"Khaybar, northern Arabia",ru:"Хайбар, северная Аравия"},summary:{en:"Muslims captured the fortified strongholds of Khaybar. Ali ibn Abi Talib led the assault.",ru:"Взяты укрепления Хайбара. Али ибн Абу Талиб повёл штурм."},participants:[{name:"Ali ibn Abi Talib",role:"flag bearer and assault commander"}],consequences:["All fortresses fell","Northern routes secured"],sources:["Sahih al-Bukhari"]},
+  {id:"conquest_mecca",year:8,yearCE:630,type:"conquest",loc:"mecca",icon:"🕋",title:{en:"Conquest of Mecca",ru:"Завоевание Мекки",ar:"فتح مكة المكرمة"},date:{h:"20 Ramadan, 8 AH",g:"January 630 CE"},place:{en:"Mecca",ru:"Мекка"},summary:{en:"The Prophet ﷺ entered Mecca with 10,000 companions. Nearly bloodless. General amnesty declared.",ru:"10 000 сподвижников вошли в Мекку. Почти без крови. Всеобщая амнистия."},forces:{m:{n:10000,cmd:"Prophet Muhammad ﷺ"}},route:{from:"medina",to:"mecca"},consequences:["360 idols in Kaaba destroyed","Mass acceptance of Islam","Bilal gave first adhan from the Kaaba","General amnesty — no looting"],quran:"110:1-2",sources:["Sahih al-Bukhari","Sirah Ibn Kathir"]},
+  {id:"tabuk",year:9,yearCE:630,type:"journey",loc:"tabuk",icon:"🏜️",title:{en:"Expedition of Tabuk",ru:"Поход на Табук",ar:"غزوة تبوك"},date:{h:"9 AH",g:"630 CE"},place:{en:"Tabuk, northern Arabia",ru:"Табук, северная Аравия"},summary:{en:"The Prophet's last expedition — 700 km north to the Byzantine border. No battle occurred.",ru:"Последний поход Пророка — 700 км на север к Византии. Сражения не было."},consequences:["Muslim power shown to Byzantine border","Several communities submitted peacefully","Last expedition led by the Prophet"],quran:"9:38",sources:["Sahih al-Bukhari"]},
+  {id:"farewell_hajj",year:10,yearCE:632,type:"event",loc:"arafat",icon:"🕋",title:{en:"The Farewell Pilgrimage",ru:"Прощальное паломничество",ar:"حجة الوداع"},date:{h:"10 AH",g:"March 632 CE"},place:{en:"Mecca — Mount Arafat",ru:"Мекка — Гора Арафат"},summary:{en:"The Prophet ﷺ performed his only Hajj with 100,000+ companions and delivered the Farewell Sermon.",ru:"Единственный хадж Пророка с 100 000+ сподвижниками. Прощальная проповедь."},consequences:["Hajj rites established permanently","Islam declared complete","Revelation: 'I have perfected your religion' (5:3)"],quran:"5:3",sources:["Sahih al-Bukhari","Sahih Muslim"]},
+  {id:"death_prophet",year:11,yearCE:632,type:"event",loc:"medina",icon:"🌿",title:{en:"Passing of the Prophet ﷺ",ru:"Уход Пророка ﷺ",ar:"وفاة النبي ﷺ"},date:{h:"12 Rabi al-Awwal, 11 AH",g:"8 June 632 CE"},place:{en:"Medina — house of Aisha",ru:"Медина — дом Аиши"},summary:{en:"The Prophet Muhammad ﷺ passed away at age 63. Abu Bakr was elected first Caliph.",ru:"Пророк скончался в 63 года. Абу Бакр избран первым халифом."},consequences:["Quran fully preserved","Islam spread across Arabia","Abu Bakr elected Caliph"],quran:"3:144",sources:["Sahih al-Bukhari"]},
+  {id:"ridda_wars",year:12,yearCE:633,type:"battle",loc:"yamama",icon:"⚔️",title:{en:"Wars of Ridda",ru:"Войны Ридды",ar:"حروب الردة"},date:{h:"11–12 AH",g:"632–633 CE"},place:{en:"Yamama and Arabia",ru:"Ямама и Аравия"},summary:{en:"Abu Bakr fought apostate tribes and false prophets, preserving the unity of the Islamic state.",ru:"Абу Бакр сохранил единство уммы в войне против вероотступников."},participants:[{name:"Khalid ibn al-Walid",role:"Muslim commander"},{name:"Musaylima al-Kadhdhab",role:"false prophet, slain"}],consequences:["Arabia reunified","Quran compilation prompted by martyred memorizers"],sources:["Sahih al-Bukhari","Tarikh al-Tabari"]},
+  {id:"damascus",year:14,yearCE:635,type:"conquest",loc:"damascus",icon:"🏛️",title:{en:"Conquest of Damascus",ru:"Завоевание Дамаска",ar:"فتح دمشق"},date:{h:"Rajab 14 AH",g:"635 CE"},place:{en:"Damascus, Syria",ru:"Дамаск, Сирия"},summary:{en:"Khalid ibn al-Walid took Damascus after 70 nights — half by storm, half by treaty.",ru:"70-ночная осада — наполовину штурмом, наполовину договором."},participants:[{name:"Abu Ubayda ibn al-Jarrah",role:"commander-in-chief"},{name:"Khalid ibn al-Walid",role:"night assault leader"}],consequences:["Byzantine Syria's capital fell","Gateway to all of Syria opened"],sources:["Futuh al-Buldan","Tarikh al-Tabari"]},
+  {id:"yarmouk",year:15,yearCE:636,type:"battle",loc:"yarmouk",icon:"⚔️",title:{en:"Battle of Yarmouk",ru:"Битва при Ярмуке",ar:"معركة اليرموك"},date:{h:"15 AH",g:"636 CE"},place:{en:"Yarmouk River, Syria",ru:"Река Ярмук, Сирия"},summary:{en:"36,000 Muslims defeated 100,000+ Byzantines. All of Syria opened to Islam.",ru:"36 000 мусульман разбили 100 000+ византийцев. Вся Сирия открылась."},forces:{m:{n:36000,cmd:"Khalid ibn al-Walid"},e:{n:100000,cmd:"Vahan",f:"Byzantine Empire"}},consequences:["All Syria opened","One of the most decisive battles in history"],sources:["Futuh al-Buldan","Tarikh al-Tabari"]},
+  {id:"qadisiyyah",year:15,yearCE:636,type:"battle",loc:"qadisiyyah",icon:"⚔️",title:{en:"Battle of al-Qadisiyyah",ru:"Битва при Кадисийе",ar:"معركة القادسية"},date:{h:"15 AH",g:"636 CE"},place:{en:"al-Qadisiyyah, Iraq",ru:"Кадисийя, Ирак"},summary:{en:"Sa'd ibn Abi Waqqas defeated the Sassanid Empire, opening all of Mesopotamia to Islam.",ru:"Са'д разгромил Сасанидов, открыв путь в Месопотамию."},forces:{m:{n:30000,cmd:"Sa'd ibn Abi Waqqas"},e:{n:100000,cmd:"Rustam Farrokhzad",f:"Sassanid Empire",elephants:true}},consequences:["Mesopotamia fell to Islam","Ctesiphon (al-Madain) fell shortly after","End of Sassanid Empire"],sources:["Tarikh al-Tabari"]},
+  {id:"jerusalem",year:16,yearCE:638,type:"conquest",loc:"jerusalem",icon:"🕌",title:{en:"Surrender of Jerusalem",ru:"Сдача Иерусалима",ar:"فتح بيت المقدس"},date:{h:"16 AH",g:"638 CE"},place:{en:"Jerusalem (al-Quds)",ru:"Иерусалим (аль-Кудс)"},summary:{en:"Patriarch Sophronius surrendered Jerusalem peacefully — only to Caliph Umar in person.",ru:"Патриарх сдал Иерусалим лично халифу Умару."},consequences:["Third holiest city under Muslim rule","Jews allowed to return after Byzantine ban","Covenant of Umar — model of just governance"],sources:["Tarikh al-Tabari"]},
+  {id:"conquest_egypt",year:19,yearCE:641,type:"conquest",loc:"alexandria",icon:"🏺",title:{en:"Conquest of Egypt",ru:"Завоевание Египта",ar:"فتح مصر"},date:{h:"19–21 AH",g:"640–642 CE"},place:{en:"Egypt — Alexandria",ru:"Египет — Александрия"},summary:{en:"Amr ibn al-As conquered Egypt with 12,000 men, ending 600+ years of Byzantine rule.",ru:"12 000 воинов завершили 600 лет Byzantium."},forces:{m:{n:12000,cmd:"Amr ibn al-As"},e:{f:"Byzantine Empire"}},consequences:["Egypt a wealthy province","Gateway to North Africa","Arabic became language of Egypt"],sources:["Futuh al-Buldan"]},
+  {id:"quran_standardization",year:25,yearCE:646,type:"event",loc:"medina",icon:"📖",title:{en:"Standardization of the Quran",ru:"Стандартизация Корана",ar:"جمع القرآن في عهد عثمان"},date:{h:"25 AH",g:"~646 CE"},place:{en:"Medina",ru:"Медина"},summary:{en:"Uthman ibn Affan standardized the Quranic text and sent master copies to each province.",ru:"Усман стандартизировал текст Корана и разослал по провинциям."},consequences:["The Uthmanic mushaf is the Quran recited today","Prevented division over the sacred text"],sources:["Sahih al-Bukhari","Tarikh al-Tabari"]}
+];
+
+// ── Visual style per route category ──────────────────────
+const ROUTE_STYLES={
+  journey:    {color:'#D4AC0D',weight:2.5,glow:true, dashFinal:null  },
+  expedition: {color:'#C0392B',weight:2.0,glow:false,dashFinal:'12 7'},
+  conquest:   {color:'#1E8449',weight:2.2,glow:false,dashFinal:'4 5' },
+  diplomatic: {color:'#2471A3',weight:1.8,glow:false,dashFinal:'2 7' },
+};
+
+// ── Multi-waypoint campaign routes ────────────────────────
+const CAMPAIGN_ROUTES=[
+  {id:'rt_hijra',      evId:'hijra',              year:1, cat:'journey',
+   pts:[[21.42,39.83],[20.9,39.5],[21.2,38.9],[22.2,38.6],[23.4,38.5],[24.47,39.62]]},
+  {id:'rt_badr',       evId:'badr',               year:2, cat:'expedition',
+   pts:[[24.47,39.62],[24.0,39.2],[23.73,38.79]]},
+  {id:'rt_uhud',       evId:'uhud',               year:3, cat:'expedition',
+   pts:[[24.47,39.62],[24.51,39.70]]},
+  {id:'rt_hudaybiyyah',evId:'hudaybiyyah',         year:6, cat:'diplomatic',
+   pts:[[24.47,39.62],[23.4,39.65],[22.3,39.62],[21.45,39.57]]},
+  {id:'rt_khaybar',    evId:'khaybar',             year:7, cat:'expedition',
+   pts:[[24.47,39.62],[25.1,39.45],[25.70,39.29]]},
+  {id:'rt_mecca',      evId:'conquest_mecca',      year:8, cat:'conquest',
+   pts:[[24.47,39.62],[23.4,39.65],[22.3,39.72],[21.42,39.83]]},
+  {id:'rt_tabuk',      evId:'tabuk',               year:9, cat:'expedition',
+   pts:[[24.47,39.62],[25.6,38.8],[27.0,37.6],[28.38,36.57]]},
+  {id:'rt_hajj',       evId:'farewell_hajj',        year:10,cat:'journey',
+   pts:[[24.47,39.62],[22.9,39.65],[21.36,39.98]]},
+  {id:'rt_damascus',   evId:'damascus',            year:14,cat:'conquest',
+   pts:[[24.47,39.62],[27.5,38.5],[30.1,37.4],[31.6,36.7],[33.51,36.29]]},
+  {id:'rt_yarmouk',    evId:'yarmouk',             year:15,cat:'expedition',
+   pts:[[33.51,36.29],[32.68,35.92]]},
+  {id:'rt_qadisiyyah', evId:'qadisiyyah',          year:15,cat:'expedition',
+   pts:[[24.47,39.62],[26.5,42.0],[29.0,44.0],[31.70,44.48]]},
+  {id:'rt_jerusalem',  evId:'jerusalem',           year:16,cat:'diplomatic',
+   pts:[[33.51,36.29],[32.68,35.92],[31.77,35.21]]},
+  {id:'rt_egypt',      evId:'conquest_egypt',      year:19,cat:'conquest',
+   pts:[[31.77,35.21],[30.8,32.5],[30.0,31.2],[31.20,29.92]]},
+];
+
+// ── Expansion zones (additive, used for animated reveal) ─
+const EXPANSION_ZONES=[
+  {id:'med_core', fromYear:1,
+   polys:[[[27,37.5],[23,36.5],[21.5,38.5],[20.5,40.5],[21,42.5],[23.5,43],[27,41.5]]]},
+  {id:'hejaz_n',  fromYear:6,
+   polys:[[[29,36],[27,36],[27,41.5],[29,41.5]]]},
+  {id:'mecca_s',  fromYear:8,
+   polys:[[[21.5,38.5],[18.5,38],[18,41.5],[21,43],[21.5,42.5]]]},
+  {id:'tabuk_n',  fromYear:9,
+   polys:[[[30.5,35.5],[29,35.5],[29,42],[30.5,42]]]},
+  {id:'arabia',   fromYear:13,
+   polys:[[[29.5,42],[29.5,50],[26,57],[22,59.5],[17.5,57],[13,52],[12,44],[15,42],[18.5,38],[18.5,43.5],[21,45],[25,44],[29,43]]]},
+  {id:'levant',   fromYear:15,
+   polys:[[[37.5,35.5],[29.5,35.5],[29.5,44],[37.5,44]]]},
+  {id:'iraq',     fromYear:15,
+   polys:[[[38,44],[29.5,44],[29.5,51.5],[38,51.5]]]},
+  {id:'egypt',    fromYear:20,
+   polys:[[[31.5,25],[22.5,25],[22,29],[23.5,34.5],[29,35.5],[31.5,34]]]},
+  {id:'libya',    fromYear:25,
+   polys:[[[32.5,13],[22.5,13],[22.5,25],[31.5,25],[32.5,20]]]},
+  {id:'w_persia', fromYear:25,
+   polys:[[[38,51.5],[38,61],[30,61],[24,57],[26,57],[29.5,51.5]]]},
+];
+
+// ════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════
+let lang='en', currentYear=35;
+let activeFilters=new Set(['battle','treaty','journey','conquest','event']);
+let layerVis={byzantine:true,sassanid:true,arabia:true,islamic:true};
+let markers={}, empLayers={b:[],s:[],a:[]}, rlLayers=[];
+let _expZoneLayers=[], _expAnimated=new Set(), _expLastYear=0;
+let selectedId=null, spreading=false, spreadTimer=null;
+
+const FL={en:{battle:'Battles',treaty:'Treaties',journey:'Journeys',conquest:'Conquests',event:'Events',all:'All'},
+          ru:{battle:'Битвы',treaty:'Договоры',journey:'Походы',conquest:'Завоевания',event:'События',all:'Все'}};
+
+// ════════════════════════════════════════════════════════════
+//  MAP
+// ════════════════════════════════════════════════════════════
+const FULL_BOUNDS = [[8, 22], [44, 68]]; // Yemen→Anatolia, Egypt→Persia
+
+const map=L.map('map',{zoomControl:true,attributionControl:false,minZoom:3,maxZoom:9});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:9}).addTo(map);
+L.control.attribution({prefix:'© <a href="https://carto.com/">CARTO</a>'}).addTo(map);
+
+function fitFullBounds(m) {
+  const el = m.getContainer();
+  const w = el.offsetWidth, h = el.offsetHeight;
+  const px = Math.max(20, Math.round(w * 0.04));
+  const py = Math.max(16, Math.round(h * 0.05));
+  m.fitBounds(FULL_BOUNDS, { padding: [py, px], animate: false });
+}
+
+// Initial fit after layout settles
+setTimeout(() => fitFullBounds(map), 0);
+
+// Re-fit on resize
+new ResizeObserver(() => { map.invalidateSize(); fitFullBounds(map); })
+  .observe(map.getContainer());
+
+// ── Cinematic fly-to ──────────────────────────────────────
+function cinematicFlyTo(lat, lng) {
+  const el  = map.getContainer();
+  const h   = el.offsetHeight;
+  const targetZoom = Math.max(map.getZoom(), 7);
+  // Shift center down ~20% of map height → marker sits in upper third,
+  // above the event overlay that covers the card.
+  const offsetPx = h * 0.20;
+  const pt      = map.project(L.latLng(lat, lng), targetZoom);
+  const shifted = map.unproject(L.point(pt.x, pt.y + offsetPx), targetZoom);
+  map.flyTo(shifted, targetZoom, { animate: true, duration: 1.15, easeLinearity: 0.18 });
+}
+
+// ════════════════════════════════════════════════════════════
+//  EMPIRES
+// ════════════════════════════════════════════════════════════
+function buildEmpires(){
+  [...empLayers.b,...empLayers.s,...empLayers.a].forEach(l=>map.removeLayer(l));
+  empLayers={b:[],s:[],a:[]};
+  const vis=layerVis;
+  const bOpt={color:'#3355bb',weight:1.5,dashArray:'6,5',fillColor:'#4466dd',fillOpacity:vis.byzantine?0.3:0,opacity:vis.byzantine?0.8:0};
+  const sOpt={color:'#aa3311',weight:1.5,dashArray:'6,5',fillColor:'#cc5522',fillOpacity:vis.sassanid?0.3:0,opacity:vis.sassanid?0.8:0};
+  const aOpt={color:'#997710',weight:1,dashArray:'4,6',fillColor:'#cc9922',fillOpacity:vis.arabia?0.22:0,opacity:vis.arabia?0.7:0};
+  BYZANTINE_POLYS.forEach(c=>empLayers.b.push(L.polygon(c,bOpt).addTo(map)));
+  SASSANID_POLYS.forEach(c =>empLayers.s.push(L.polygon(c,sOpt).addTo(map)));
+  ARABIA_POLYS.forEach(c   =>empLayers.a.push(L.polygon(c,aOpt).addTo(map)));
+}
+
+// ── Animated territory expansion ─────────────────────────
+
+// Call once after map init — creates all zone polygons at opacity 0.
+function initExpansionZones(){
+  _expZoneLayers=EXPANSION_ZONES.map(zone=>({
+    id:zone.id,
+    fromYear:zone.fromYear,
+    polys:zone.polys.map(c=>
+      L.polygon(c,{color:'#1a7a40',weight:1.8,fillColor:'#1e8449',fillOpacity:0,opacity:0}).addTo(map)
+    )
+  }));
+}
+
+// Two-phase entrance for a single polygon: border draws, then fill fades in.
+function animateZoneIn(poly,delayMs){
+  const path=poly.getElement();
+  if(!path) return;
+  setTimeout(()=>{
+    const len=path.getTotalLength();
+    const dur=Math.min(1100,Math.max(650,len*0.65));
+    // Phase 1: draw the border
+    path.style.strokeDasharray =`${len} ${len}`;
+    path.style.strokeDashoffset=len;
+    path.style.transition='none';
+    path.getBoundingClientRect();
+    path.style.transition=`stroke-dashoffset ${dur}ms cubic-bezier(0.4,0,0.2,1)`;
+    path.style.strokeDashoffset='0';
+    // Phase 2: fill fades in at 40% through the border draw
+    setTimeout(()=>poly.setStyle({fillOpacity:0.38}), dur*0.40);
+    // Phase 3: brief border pulse at completion
+    setTimeout(()=>{
+      path.style.strokeWidth='3.5px';
+      setTimeout(()=>{ path.style.strokeWidth='1.8px';
+        setTimeout(()=>{ path.style.strokeWidth=''; },520);
+      },150);
+    }, dur+55);
+  },delayMs);
+}
+
+// Called on every year change to show/hide zones with animation for new ones.
+function updateExpansionAnimated(year){
+  if(!layerVis.islamic){
+    _expZoneLayers.forEach(({polys})=>polys.forEach(p=>p.setStyle({fillOpacity:0,opacity:0})));
+    return;
+  }
+  if(year<_expLastYear){
+    for(const id of [..._expAnimated]){
+      const z=EXPANSION_ZONES.find(x=>x.id===id);
+      if(z&&z.fromYear>year) _expAnimated.delete(id);
+    }
+  }
+  const prevYear=_expLastYear; _expLastYear=year;
+  let stagger=0;
+  _expZoneLayers.forEach(zone=>{
+    const vis=zone.fromYear<=year;
+    const isNew=vis&&!_expAnimated.has(zone.id)&&year>prevYear;
+    if(isNew){
+      _expAnimated.add(zone.id);
+      zone.polys.forEach(p=>{
+        p.setStyle({opacity:1,fillOpacity:0});
+        animateZoneIn(p,stagger);
+        stagger+=140;
+      });
+    } else if(vis){
+      zone.polys.forEach(p=>{
+        const path=p.getElement();
+        if(path){path.style.strokeDasharray='';path.style.strokeDashoffset='0';}
+        p.setStyle({fillOpacity:0.38,opacity:1});
+      });
+    } else {
+      zone.polys.forEach(p=>p.setStyle({fillOpacity:0,opacity:0}));
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+//  REGION LABELS
+// ════════════════════════════════════════════════════════════
+function buildRegionLabels(){
+  rlLayers.forEach(l=>map.removeLayer(l));
+  rlLayers=[];
+  REGION_LABELS.forEach(r=>{
+    const txt=lang==='ru'?r.text.ru:r.text.en;
+    const ic=L.divIcon({className:'rl',html:`<div class="rl-t" style="color:${r.color};">${txt}</div>`,iconAnchor:[0,0]});
+    rlLayers.push(L.marker([r.lat,r.lng],{icon:ic,interactive:false}).addTo(map));
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+//  ANIMATED CAMPAIGN ROUTES
+// ════════════════════════════════════════════════════════════
+let _rtLayers=[], _rtAnimated=new Set(), _rtLastYear=0;
+
+function addTravelDot(map,pts,color,duration){
+  const dot=L.circleMarker(pts[0],{radius:4.5,fillColor:color,fillOpacity:1,color:'#fff',weight:1.5,opacity:0.95,interactive:false}).addTo(map);
+  let cum=0; const segs=[];
+  for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i],d=Math.hypot(b[0]-a[0],b[1]-a[1]);segs.push({a,b,d,cs:cum});cum+=d;}
+  const totalLen=cum, t0=performance.now();
+  function tick(now){
+    const p=Math.min((now-t0)/duration,1),tgt=p*totalLen;
+    let pos=L.latLng(...pts[pts.length-1]);
+    for(const s of segs){if(s.cs+s.d>=tgt){const f=s.d>0?(tgt-s.cs)/s.d:0;pos=L.latLng(s.a[0]+(s.b[0]-s.a[0])*f,s.a[1]+(s.b[1]-s.a[1])*f);break;}}
+    dot.setLatLng(pos);
+    if(p<1) requestAnimationFrame(tick); else map.removeLayer(dot);
+  }
+  requestAnimationFrame(tick);
+}
+
+function buildAnimatedRoutes(map,year,filters){
+  _rtLayers.forEach(({main,glow})=>{map.removeLayer(main);if(glow)map.removeLayer(glow);});
+  _rtLayers=[];
+  if(year<_rtLastYear){
+    const sv=new Set(CAMPAIGN_ROUTES.filter(r=>{const e=EVENTS.find(x=>x.id===r.evId);return e&&e.year<=year&&filters.has(e.type);}).map(r=>r.id));
+    for(const id of [..._rtAnimated]){if(!sv.has(id))_rtAnimated.delete(id);}
+  }
+  const prevYear=_rtLastYear; _rtLastYear=year;
+  CAMPAIGN_ROUTES.forEach(route=>{
+    const ev=EVENTS.find(e=>e.id===route.evId);
+    if(!ev||ev.year>year||!filters.has(ev.type)) return;
+    const st=ROUTE_STYLES[route.cat], pts=route.pts;
+    const glow=st.glow?L.polyline(pts,{color:st.color,weight:9,opacity:0.12,interactive:false}).addTo(map):null;
+    const main=L.polyline(pts,{color:st.color,weight:st.weight,opacity:0.80,interactive:false}).addTo(map);
+    _rtLayers.push({main,glow});
+    const isNew=!_rtAnimated.has(route.id)&&year>prevYear;
+    if(isNew){
+      _rtAnimated.add(route.id);
+      const dist=pts.reduce((acc,p,i)=>i===0?0:acc+Math.hypot(p[0]-pts[i-1][0],p[1]-pts[i-1][1]),0);
+      const dur=Math.max(900,Math.min(2400,dist*90));
+      requestAnimationFrame(()=>{
+        [main,glow].filter(Boolean).forEach(poly=>{
+          const path=poly.getElement();if(!path)return;
+          const len=path.getTotalLength();
+          path.style.strokeDasharray=`${len} ${len}`;
+          path.style.strokeDashoffset=len;
+          path.style.transition='none';
+          path.getBoundingClientRect();
+          path.style.transition=`stroke-dashoffset ${dur}ms cubic-bezier(0.4,0,0.15,1)`;
+          path.style.strokeDashoffset='0';
+        });
+        addTravelDot(map,pts,st.color,dur);
+        if(st.dashFinal){setTimeout(()=>{const path=main.getElement();if(!path)return;path.style.transition='none';path.style.strokeDasharray=st.dashFinal;path.style.strokeDashoffset='0';},dur+60);}
+      });
+    } else {
+      requestAnimationFrame(()=>{
+        const mp=main.getElement();if(mp){mp.style.strokeDasharray=st.dashFinal||'';mp.style.strokeDashoffset='0';}
+        if(glow){const gp=glow.getElement();if(gp){gp.style.strokeDasharray='';gp.style.strokeDashoffset='0';}}
+      });
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+//  MARKERS
+// ════════════════════════════════════════════════════════════
+function buildMarkers(){
+  Object.values(markers).forEach(m=>map.removeLayer(m));
+  markers={};
+  buildEmpires();
+  buildAnimatedRoutes(map, currentYear, activeFilters);
+
+  const vis=EVENTS.filter(e=>e.year<=currentYear&&activeFilters.has(e.type));
+
+  // group by location
+  const byLoc={};
+  vis.forEach(ev=>{if(!byLoc[ev.loc])byLoc[ev.loc]=[];byLoc[ev.loc].push(ev);});
+
+  Object.entries(byLoc).forEach(([lid,evts])=>{
+    const loc=LOCS[lid];
+    if(!loc) return;
+    evts.forEach((ev,i)=>{
+      const lat=loc.lat+i*0.14, lng=loc.lng+i*0.06;
+      const sel=ev.id===selectedId;
+      const color=TYPES[ev.type].color;
+      const sz=sel?12:8;
+      const icon=L.divIcon({
+        className:'',
+        html:`<div class="mdot${sel?' sel':''}" style="width:${sz}px;height:${sz}px;background:${color};--mc:${color};"></div>`,
+        iconSize:[sz,sz],iconAnchor:[sz/2,sz/2],popupAnchor:[0,-sz-2]
+      });
+      // location label
+      const locName=lang==='ru'?(loc.nameRu||loc.name):loc.name;
+      const lblIcon=L.divIcon({className:'',html:`<div style="font-size:0.56rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.75);text-shadow:0 1px 4px #000,0 0 6px #000;pointer-events:none;margin-left:${sz/2+3}px;margin-top:-${sz/2}px;">${locName}</div>`,iconAnchor:[0,0]});
+      // Only add label for first event at this location
+      if(i===0) L.marker([lat,lng],{icon:lblIcon,interactive:false,zIndexOffset:-100}).addTo(map);
+
+      const m=L.marker([lat,lng],{icon,zIndexOffset:sel?1000:0})
+        .addTo(map)
+        .bindPopup(`<div class="pp-title">${ev.icon} ${ev.title[lang]||ev.title.en}</div><div class="pp-type">${TYPES[ev.type][lang==='ru'?'labelRu':'label']}</div><div class="pp-year">${ev.date.h} / ${ev.date.g}</div>`,{maxWidth:240});
+      m.on('click',()=>openOverlay(ev.id));
+      markers[ev.id]=m;
+    });
+  });
+  buildRegionLabels();
+}
+
+// ════════════════════════════════════════════════════════════
+//  EVENT OVERLAY
+// ════════════════════════════════════════════════════════════
+function openOverlay(id){
+  selectedId=id;
+  buildMarkers();
+  const ev=EVENTS.find(e=>e.id===id);
+  if(!ev) return;
+  const loc=LOCS[ev.loc];
+  if(loc) cinematicFlyTo(loc.lat, loc.lng);
+  const type=TYPES[ev.type];
+  const typeLbl=lang==='ru'?type.labelRu:type.label;
+  const title=ev.title[lang]||ev.title.en;
+  const summary=(ev.summary?.[lang]||ev.summary?.en)||'';
+  const place=ev.place?(ev.place[lang]||ev.place.en):'';
+
+  const sepDot=`<span class="ev-sep">·</span>`;
+  const metaParts=[
+    `<span class="ev-yr">${ev.date.h}</span>`,
+    sepDot,
+    `<span class="ev-ce">${ev.date.g}</span>`,
+    place?`${sepDot}<span class="ev-place">${place}</span>`:''
+  ].join('');
+
+  document.getElementById('overlay-content').innerHTML=`
+    <div class="ev-hd">
+      <div class="ev-icon">${ev.icon}</div>
+      <div>
+        <div class="ev-ttl">${title}</div>
+        ${ev.title.ar?`<div class="ev-ar">${ev.title.ar}</div>`:''}
+        <span class="ev-badge" style="background:${type.color}22;color:${type.color};border:1px solid ${type.color}44;">${typeLbl}</span>
+      </div>
+    </div>
+    <div class="ev-meta">${metaParts}</div>
+    ${summary?`<div class="ev-sum">${summary}</div>`:''}`;
+
+  document.getElementById('event-overlay').classList.add('open');
+}
+
+function closeOverlay(){
+  document.getElementById('event-overlay').classList.remove('open');
+  selectedId=null;
+  buildMarkers();
+}
+
+// ════════════════════════════════════════════════════════════
+//  SPREAD (auto-play)
+// ════════════════════════════════════════════════════════════
+function toggleSpread(){
+  if(spreading){
+    clearInterval(spreadTimer);
+    spreading=false;
+    document.getElementById('spread-btn').classList.remove('playing');
+    document.getElementById('spread-icon').textContent='▶';
+    document.getElementById('map-play-btn').textContent='▶';
+  } else {
+    if(currentYear>=35){currentYear=1; document.getElementById('year-slider').value=1; updateYear(1);}
+    spreading=true;
+    document.getElementById('spread-btn').classList.add('playing');
+    document.getElementById('spread-icon').textContent='⏹';
+    document.getElementById('map-play-btn').textContent='⏹';
+    spreadTimer=setInterval(()=>{
+      currentYear++;
+      document.getElementById('year-slider').value=currentYear;
+      updateYear(currentYear);
+      if(currentYear>=35){clearInterval(spreadTimer);spreading=false;document.getElementById('spread-btn').classList.remove('playing');document.getElementById('spread-icon').textContent='▶';document.getElementById('map-play-btn').textContent='▶';}
+    },600);
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  CONTROLS
+// ════════════════════════════════════════════════════════════
+function updateYear(y){
+  currentYear=y;
+  document.getElementById('year-num').textContent=y+' AH';
+  const era=ERAS.find(e=>y>=e.from&&y<e.to)||ERAS[ERAS.length-1];
+  const eraLbl=lang==='ru'?era.labelRu:era.label;
+  document.getElementById('era-row').innerHTML=`${eraLbl} <span class="era-star">★</span>`;
+  buildMarkers();
+  updateExpansionAnimated(y);
+  if(selectedId){const ev=EVENTS.find(e=>e.id===selectedId);if(!ev||ev.year>y||!activeFilters.has(ev.type))closeOverlay();}
+}
+
+document.getElementById('year-slider').addEventListener('input',function(){updateYear(parseInt(this.value));});
+
+function toggleFilter(type){
+  const btn=document.querySelector(`.f-btn[data-type="${type}"]`);
+  if(activeFilters.has(type)){activeFilters.delete(type);btn.classList.remove('active');}
+  else{activeFilters.add(type);btn.classList.add('active');}
+  updateAllFilterBtn();
+  buildMarkers();
+}
+
+function setAllFilter(){
+  const allActive=activeFilters.size===5;
+  if(allActive){activeFilters.clear();document.querySelectorAll('.f-btn[data-type]').forEach(b=>b.classList.remove('active'));document.getElementById('f-all').classList.remove('active');}
+  else{['battle','treaty','journey','conquest','event'].forEach(t=>{activeFilters.add(t);document.querySelector(`.f-btn[data-type="${t}"]`).classList.add('active');});document.getElementById('f-all').classList.add('active');}
+  buildMarkers();
+}
+
+function updateAllFilterBtn(){
+  document.getElementById('f-all').classList.toggle('active',activeFilters.size===5);
+}
+
+function toggleLayer(name){
+  layerVis[name]=!layerVis[name];
+  document.getElementById(`li-${name}`).classList.toggle('off',!layerVis[name]);
+  buildMarkers();
+  if(name==='islamic') updateExpansionAnimated(currentYear);
+}
+
+function setLang(l){
+  lang=l;
+  document.getElementById('lb-en').classList.toggle('active',l==='en');
+  document.getElementById('lb-ru').classList.toggle('active',l==='ru');
+  // filter labels
+  document.querySelectorAll('.fl-t').forEach(el=>{const t=el.getAttribute('data-type');if(t)el.textContent=FL[l][t]||el.textContent;});
+  document.getElementById('fl-all').textContent=FL[l].all;
+  // legend labels
+  document.getElementById('li-islamic-t').textContent  =l==='ru'?'Исл. государство':'Islamic State';
+  document.getElementById('li-byzantine-t').textContent=l==='ru'?'Византия':'Byzantine';
+  document.getElementById('li-sassanid-t').textContent =l==='ru'?'Сасаниды':'Sassanid';
+  document.getElementById('li-arabia-t').textContent   =l==='ru'?'Св. Аравия':'Free Arabia';
+  document.getElementById('leg-title').textContent     =l==='ru'?'Легенда':'Empires';
+  document.getElementById('rl-journey').textContent    =l==='ru'?'Поход':'Journey';
+  document.getElementById('rl-expedition').textContent =l==='ru'?'Экспедиция':'Expedition';
+  document.getElementById('rl-conquest').textContent   =l==='ru'?'Завоевание':'Conquest';
+  document.getElementById('rl-diplomatic').textContent =l==='ru'?'Дипломатия':'Diplomatic';
+  updateYear(currentYear);
+  if(selectedId) openOverlay(selectedId);
+}
+
+// ════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════
+initExpansionZones();   // create all zone polygons at opacity 0
+updateYear(35);         // populate timeline at default year (triggers updateExpansionAnimated)
+</script>
+</body>
+</html>

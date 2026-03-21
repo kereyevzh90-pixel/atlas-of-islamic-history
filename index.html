@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سيرة · Sirah Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+/* ── RESET & BASE ─────────────────────────────────────────── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; }
+body {
+  background: #0b0907;
+  height: 100vh;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 6px;
+  font-family: 'Segoe UI', sans-serif;
+  overscroll-behavior: none;
+  overflow: hidden;
+}
+
+/* ── CARD ─────────────────────────────────────────────────── */
+.card {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #1a1610;
+  border: 1.5px solid #3a2e18;
+  border-radius: clamp(8px, 1vw, 14px);
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(212,168,83,0.05);
+}
+
+/* ── HEADER ───────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(10px,1.8vw,16px) clamp(14px,2.5vw,24px);
+  border-bottom: 1px solid #2a2010;
+  gap: 8px;
+}
+.header-left { display:flex; align-items:center; gap:clamp(8px,1.5vw,16px); }
+.arabic { font-family:serif; font-size:clamp(1.4rem,3vw,2rem); color:#d4a853; line-height:1; }
+.latin  { font-family:'Cinzel',serif; font-size:clamp(.6rem,1vw,.75rem); letter-spacing:3px; color:#7a6030; text-transform:uppercase; }
+.header-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+
+.spread-btn {
+  display:flex; align-items:center; gap:7px;
+  background:transparent; border:1.5px solid #d4a853; color:#d4a853;
+  border-radius:20px; padding:clamp(5px,1vw,8px) clamp(12px,2vw,18px);
+  font-family:'Cinzel',sans-serif; font-size:clamp(.56rem,.8vw,.68rem);
+  letter-spacing:2px; text-transform:uppercase; cursor:pointer;
+  transition:background .2s;
+}
+.spread-btn:hover  { background:rgba(212,168,83,.1); }
+.spread-btn.active { background:rgba(212,168,83,.18); }
+
+.lang-grp { display:flex; gap:4px; }
+.lbtn {
+  background:transparent; border:1px solid #352b18; color:#5a4828;
+  padding:4px 9px; border-radius:4px; cursor:pointer; font-size:.68rem;
+  transition:all .2s;
+}
+.lbtn.on { border-color:#d4a853; color:#d4a853; background:rgba(212,168,83,.08); }
+
+/* ── MAP WRAPPER (fills remaining card height) ───────────── */
+.map-aspect {
+  width: 100%;
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  background: #080604;
+  border-bottom: 1px solid #2a2010;
+  overflow: hidden;
+}
+.map-inner {
+  position: absolute;
+  inset: 0;
+}
+#leaflet-map {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Polygon transitions (fill fade + stroke settle) ─────── */
+.leaflet-overlay-pane svg path {
+  transition: fill-opacity .65s ease-in-out, stroke-opacity .45s ease-in-out,
+              stroke-width .5s ease-in-out, filter .55s ease-in-out;
+}
+.leaflet-tile-pane {
+  filter: brightness(.55) saturate(.3) contrast(1.15);
+}
+
+/* ── MAP UI BUTTONS ─────────────────────────────────────── */
+.map-play-btn {
+  position:absolute; bottom:clamp(12px,2vw,18px); right:clamp(12px,2vw,18px); z-index:600;
+  width:clamp(42px,5vw,54px); height:clamp(42px,5vw,54px); border-radius:50%;
+  background:#d4a853; border:none; color:#14100b;
+  font-size:clamp(1rem,2vw,1.3rem); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 22px rgba(212,168,83,.5);
+  transition:transform .15s, box-shadow .15s;
+}
+.map-play-btn:hover { transform:scale(1.08); box-shadow:0 6px 28px rgba(212,168,83,.7); }
+
+
+/* ── LEGEND ─────────────────────────────────────────────── */
+.legend {
+  position:absolute; bottom:clamp(10px,2vw,18px); left:clamp(10px,2vw,14px); z-index:500;
+  background:rgba(10,8,4,.88); border:1px solid #2a2010;
+  border-radius:8px; padding:8px 12px; backdrop-filter:blur(6px);
+}
+.leg-title { font-family:'Cinzel',sans-serif; font-size:.55rem; letter-spacing:1px; text-transform:uppercase; color:#4a3820; margin-bottom:7px; }
+.leg-row { display:flex; align-items:center; gap:7px; margin-bottom:5px; font-size:.68rem; color:#7a6030; cursor:pointer; transition:opacity .2s; }
+.leg-row:last-child { margin-bottom:0; }
+.leg-row.off { opacity:.3; }
+.leg-swatch { width:11px; height:11px; border-radius:2px; flex-shrink:0; }
+@media (max-width:400px) { .legend { display:none; } }
+.leg-sep { border:none; border-top:1px solid #2a2010; margin:6px 0 5px; }
+.leg-row.route { cursor:default; }
+.leg-line { flex-shrink:0; }
+
+/* ── REGION LABELS on map ────────────────────────────────── */
+.rl { pointer-events:none !important; background:transparent; border:none; box-shadow:none; }
+.rl-t { font-family:'Cinzel',sans-serif; font-size:clamp(.48rem,.6vw,.6rem); font-weight:700; letter-spacing:1.5px; text-transform:uppercase; white-space:nowrap; text-shadow:0 1px 4px #000,0 0 8px #000; }
+
+/* ── CONTROLS ─────────────────────────────────────────────── */
+.controls { padding: clamp(14px,2.5vw,22px) clamp(16px,3vw,28px) clamp(16px,2.5vw,24px); }
+.year-row { text-align:center; margin-bottom:2px; }
+.year-num {
+  font-family:'Cinzel',Georgia,serif;
+  font-size:clamp(1.8rem,5vw,3.4rem);
+  font-weight:700; color:#d4a853; letter-spacing:.12em; line-height:1;
+}
+.era-row {
+  text-align:center; font-style:italic; color:#7a6030;
+  font-family:'Cormorant Garamond','Georgia',serif;
+  font-size:clamp(.75rem,1.2vw,.9rem); margin-bottom:clamp(14px,2.5vw,20px);
+  letter-spacing:.3px;
+}
+.era-star { color:#d4a853; font-style:normal; }
+
+/* Year circles */
+.yr-circles-wrap { margin-bottom:clamp(12px,2vw,18px); }
+.yr-circles {
+  display:flex; align-items:center; overflow-x:auto;
+  padding:8px 12px; gap:0;
+  background:#0e0b06; border-radius:40px; border:1px solid #2a2010;
+  scrollbar-width:none; -ms-overflow-style:none;
+}
+.yr-circles::-webkit-scrollbar { display:none; }
+.yr-dot-wrap { display:flex; align-items:center; flex-shrink:0; }
+.yr-dot {
+  width:34px; height:34px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  font-family:'Cinzel',Georgia,serif; font-size:.65rem; font-weight:600;
+  cursor:pointer; border:1.5px solid #352b18; color:#4a3a18;
+  background:transparent; transition:all .18s;
+}
+.yr-dot:hover { border-color:#6a5828; color:#8a6828; }
+.yr-dot.active {
+  background:#d4a853; border-color:#d4a853; color:#0b0907;
+  box-shadow:0 0 10px rgba(212,168,83,.55);
+}
+.yr-dash { width:14px; height:0; flex-shrink:0; border-top:2px dashed #1e1808; }
+.yr-dash.passed { border-color:#3a2a10; }
+
+/* Year popup */
+.yr-popup {
+  margin-bottom:10px; display:flex; flex-direction:row; align-items:flex-start;
+  gap:6px; overflow-x:auto; scrollbar-width:none;
+}
+.yr-popup::-webkit-scrollbar { display:none; }
+.yr-popup-hdr { display:none; }
+.yr-popup-close {
+  background:none; border:none; color:#4a3a18; cursor:pointer; font-size:.75rem;
+  padding:0 2px; line-height:1; flex-shrink:0; align-self:center;
+}
+.yr-popup-close:hover { color:#d4a853; }
+.yr-popup-card {
+  display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0;
+  background:#1a1610; border:1px solid #2a2010; border-radius:8px;
+  padding:6px 10px; cursor:pointer; transition:border-color .18s, background .18s;
+  max-width:110px; text-align:center;
+}
+.yr-popup-card:hover { border-color:#5a4828; background:#211a0e; }
+.yr-popup-num {
+  font-family:'Cinzel',serif; font-size:.55rem; font-weight:700; color:#d4a853;
+}
+.yr-popup-icon { font-size:.85rem; }
+.yr-popup-title {
+  font-family:'Cinzel',serif; font-size:.58rem; color:#a08040;
+  letter-spacing:.1px; line-height:1.35;
+}
+
+/* Filters */
+.filter-row { display:flex; gap:clamp(4px,1vw,8px); flex-wrap:wrap; }
+.fbtn {
+  background:transparent; border:1.5px solid; border-radius:20px;
+  padding:clamp(4px,.8vw,6px) clamp(8px,1.5vw,14px);
+  font-family:'Cinzel',sans-serif; font-size:clamp(.52rem,.7vw,.65rem);
+  letter-spacing:1.5px; text-transform:uppercase; cursor:pointer;
+  transition:all .18s; display:flex; align-items:center; gap:6px;
+}
+.fdot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.fbtn.all { border-color:#d4a853; color:#d4a853; }
+.fbtn.all.on { background:rgba(212,168,83,.15); }
+.fbtn[data-t="battle"]   { border-color:#7a1810; color:#c06060; }
+.fbtn[data-t="treaty"]   { border-color:#14407a; color:#4888c0; }
+.fbtn[data-t="journey"]  { border-color:#6a4a08; color:#b08828; }
+.fbtn[data-t="conquest"] { border-color:#083820; color:#30a860; }
+.fbtn[data-t="event"]    { border-color:#3a0858; color:#8840a8; }
+.fbtn.on[data-t="battle"]   { background:rgba(192,57,43,.22); }
+.fbtn.on[data-t="treaty"]   { background:rgba(36,113,163,.22); }
+.fbtn.on[data-t="journey"]  { background:rgba(212,172,13,.22); }
+.fbtn.on[data-t="conquest"] { background:rgba(30,132,73,.22); }
+.fbtn.on[data-t="event"]    { background:rgba(125,60,152,.22); }
+
+/* ── EVENT FULL PAGE ─────────────────────────────────────── */
+.event-page {
+  position:fixed; inset:0; z-index:2000;
+  background:#0b0907; overflow-y:auto;
+  animation: epFadeIn .3s ease;
+}
+@keyframes epFadeIn { from{opacity:0;transform:translateX(40px)} to{opacity:1;transform:translateX(0)} }
+.ep-header {
+  display:flex; align-items:center; gap:14px;
+  padding:16px 20px; border-bottom:1px solid #2a2010;
+  position:sticky; top:0; background:#0b0907; z-index:10;
+}
+.ep-back {
+  background:#1a1610; border:1px solid #2a2010; color:#d4a853;
+  border-radius:6px; padding:6px 14px; cursor:pointer;
+  font-family:'Cinzel',serif; font-size:.7rem; letter-spacing:1px;
+  transition:border-color .18s;
+}
+.ep-back:hover { border-color:#5a4828; }
+.ep-header-title {
+  font-family:'Cinzel',serif; font-size:.85rem; color:#a08040;
+  letter-spacing:.5px;
+}
+.ep-body { padding:24px 20px; max-width:680px; margin:0 auto; }
+.ep-icon { font-size:2.8rem; margin-bottom:10px; }
+.ep-title {
+  font-family:'Cinzel',serif; font-size:clamp(1.1rem,3vw,1.6rem);
+  font-weight:700; color:#d4a853; line-height:1.3; margin-bottom:6px;
+}
+.ep-title-ar {
+  font-size:1.2rem; color:#7a6030; margin-bottom:10px;
+  font-family:serif; direction:rtl;
+}
+.ep-badge {
+  display:inline-block; border-radius:20px; padding:3px 12px;
+  font-family:'Cinzel',serif; font-size:.6rem; letter-spacing:1.2px;
+  text-transform:uppercase; margin-bottom:14px;
+}
+.ep-meta {
+  display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;
+  font-family:'Cinzel',serif; font-size:.68rem; color:#5a4828;
+}
+.ep-meta span { background:#1a1610; border:1px solid #2a2010; border-radius:4px; padding:3px 10px; }
+.ep-summary {
+  font-family:'Cormorant Garamond',Georgia,serif; font-size:1rem;
+  color:#c8a870; line-height:1.7; margin-bottom:22px;
+}
+.ep-section-title {
+  font-family:'Cinzel',serif; font-size:.65rem; letter-spacing:1.8px;
+  text-transform:uppercase; color:#5a4828; margin-bottom:10px;
+  border-bottom:1px solid #1e1808; padding-bottom:5px;
+}
+.ep-list { list-style:none; padding:0; margin:0 0 22px; display:flex; flex-direction:column; gap:6px; }
+.ep-list li {
+  background:#1a1610; border:1px solid #2a2010; border-radius:6px;
+  padding:8px 12px; font-family:'Cormorant Garamond',Georgia,serif;
+  font-size:.95rem; color:#a08040; display:flex; align-items:flex-start; gap:8px;
+}
+.ep-list li::before { content:'›'; color:#d4a853; flex-shrink:0; }
+.ep-participants { margin-bottom:22px; display:flex; flex-direction:column; gap:6px; }
+.ep-person {
+  background:#1a1610; border:1px solid #2a2010; border-radius:6px;
+  padding:8px 12px; display:flex; justify-content:space-between; align-items:center;
+}
+.ep-person-name { font-family:'Cinzel',serif; font-size:.68rem; color:#d4a853; }
+.ep-person-role { font-family:'Cormorant Garamond',Georgia,serif; font-size:.85rem; color:#5a4828; font-style:italic; }
+.ep-quran {
+  background:#1a1610; border:1px solid #2a2010; border-radius:6px;
+  padding:10px 14px; margin-bottom:22px;
+  font-family:'Cinzel',serif; font-size:.7rem; color:#d4a853; letter-spacing:.5px;
+}
+.ep-sources { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:32px; }
+.ep-source {
+  background:#1a1610; border:1px solid #2a2010; border-radius:20px;
+  padding:3px 12px; font-family:'Cormorant Garamond',Georgia,serif;
+  font-size:.82rem; color:#5a4828;
+}
+
+/* ── UNIT PAGE (Khan-style stacked sections) ─────────────── */
+.unit-page {
+  position:fixed; inset:0; z-index:2000;
+  background:#0f0d09; overflow-y:auto;
+  animation:epFadeIn .25s ease;
+}
+.up-header {
+  display:flex; align-items:center; gap:14px;
+  padding:14px 24px; border-bottom:1px solid #2a2010;
+  position:sticky; top:0; background:#0b0907; z-index:10;
+}
+.up-body { max-width:640px; margin:0 auto; padding:0 0 60px; }
+/* One section per event */
+.up-section {
+  padding:32px 24px 28px;
+  border-bottom:8px solid #070503;
+}
+.up-section.active { background:#0d0b08; }
+.up-section-title {
+  font-family:'Cinzel',serif; font-size:clamp(1.3rem,4vw,1.9rem);
+  font-weight:700; color:#e8d090; line-height:1.25; margin-bottom:14px;
+}
+.up-section-desc {
+  font-family:'Cormorant Garamond',Georgia,serif; font-size:1.02rem;
+  color:#8a7048; line-height:1.72; margin-bottom:24px;
+}
+/* Sub-item list */
+.up-item-list { display:flex; flex-direction:column; margin-bottom:24px; }
+.up-item-row {
+  display:flex; align-items:center; gap:14px;
+  padding:13px 0; border-bottom:1px solid #1a1408;
+}
+.up-item-row:first-child { border-top:1px solid #1a1408; }
+.up-item-icon {
+  width:36px; height:36px; flex-shrink:0;
+  border:1px solid #252015; border-radius:6px;
+  background:#13110c; display:flex; align-items:center;
+  justify-content:center; font-size:1rem;
+}
+.up-item-label {
+  font-family:'Cormorant Garamond',Georgia,serif; font-size:1rem;
+  color:#a08040; line-height:1.35;
+}
+/* Practice card */
+.up-practice-card {
+  display:flex; align-items:stretch;
+  border:1px solid #2a2010; border-radius:8px; overflow:hidden;
+}
+.up-pc-left {
+  flex:1; padding:14px 18px; background:#13110c;
+  display:flex; flex-direction:column; gap:11px;
+}
+.up-pc-title {
+  font-family:'Cinzel',serif; font-size:.7rem; font-weight:700;
+  color:#e8d090; line-height:1.4;
+}
+.up-pc-btn {
+  width:fit-content; background:transparent;
+  border:1.5px solid #d4a853; color:#d4a853;
+  border-radius:6px; padding:7px 20px; cursor:pointer;
+  font-family:'Cinzel',serif; font-size:.65rem; letter-spacing:.5px;
+  transition:background .18s;
+}
+.up-pc-btn:hover { background:rgba(212,168,83,.12); }
+.up-pc-right {
+  width:96px; background:#0f0d09; border-left:1px solid #2a2010;
+  display:flex; align-items:center; justify-content:center; text-align:center;
+}
+.up-pc-status {
+  font-family:'Cinzel',serif; font-size:.58rem; color:#5a4828;
+  letter-spacing:.5px; line-height:1.6;
+}
+
+/* ── EVENT INFO CARD (bottom panel) ──────────────────────── */
+.ev-overlay {
+  position:absolute;
+  bottom:0; left:0; right:0;
+  max-height:42%;
+  background:rgba(8,6,3,.96);
+  border-top:1px solid #2a2010;
+  z-index:800;
+  overflow-y:auto;
+  transform:translateY(100%);
+  transition:transform .32s cubic-bezier(.4,0,.2,1);
+  backdrop-filter:blur(10px);
+}
+.ev-overlay.open { transform:translateY(0); }
+.ev-inner { padding:12px 14px 16px; position:relative; }
+.ov-close {
+  position:absolute; top:10px; right:10px;
+  width:24px; height:24px; border-radius:50%; background:#1e1a10;
+  border:1px solid #352b18; color:#6a5828; cursor:pointer;
+  font-size:.85rem; display:flex; align-items:center; justify-content:center;
+  transition:color .2s, border-color .2s;
+}
+.ov-close:hover { color:#d4a853; border-color:#5a4828; }
+/* Card header row */
+.dh { display:flex; gap:10px; align-items:flex-start; margin-bottom:7px; padding-right:28px; }
+.di { font-size:1.6rem; flex-shrink:0; line-height:1; margin-top:2px; }
+.dt { font-size:.9rem; font-weight:700; color:#f0d090; line-height:1.3; }
+.dar{ font-size:.9rem; color:#6a5828; direction:rtl; margin-top:2px; }
+.dbadge { display:inline-block; padding:2px 8px; border-radius:8px; font-size:.56rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin-top:4px; }
+/* Date / location row */
+.dmeta { display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin-bottom:8px; }
+.dyr  { font-size:.7rem; color:#d4a853; font-weight:600; letter-spacing:.3px; }
+.dsep { color:#352b18; font-size:.65rem; }
+.dce  { font-size:.68rem; color:#5a4828; }
+.dplace{ font-size:.68rem; color:#4a3820; font-style:italic; }
+/* Summary text */
+.dsum { font-size:.77rem; line-height:1.55; color:#8a7048; margin:0; }
+
+/* ── LEAFLET OVERRIDES ────────────────────────────────────── */
+.leaflet-container { background:#060403 !important; }
+.leaflet-popup-content-wrapper { background:#1a1610; border:1px solid #352b18; color:#e0c88a; border-radius:8px; box-shadow:0 6px 24px rgba(0,0,0,.8); }
+.leaflet-popup-tip { background:#1a1610; }
+.leaflet-popup-content { margin:9px 12px; }
+.pp-ttl { font-size:.82rem; font-weight:600; color:#f0d090; }
+.pp-tp  { font-size:.68rem; color:#7a6030; margin-top:1px; }
+
+/* Marker hover card (stays until click elsewhere) */
+.marker-hover-card {
+  position:absolute; z-index:900; pointer-events:auto;
+  background:rgba(12,9,4,.96); border:1px solid #2a2010;
+  border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,.7);
+}
+.mktt { padding:8px 11px; min-width:120px; }
+.mktt-title {
+  font-family:'Cinzel',serif; font-size:.62rem; color:#d4a853;
+  line-height:1.4; margin-bottom:7px;
+}
+.mktt-read {
+  width:100%; background:#d4a853; border:none; border-radius:4px;
+  color:#0b0907; font-family:'Cinzel',serif; font-size:.58rem;
+  font-weight:700; letter-spacing:1.2px; text-transform:uppercase;
+  padding:4px 0; cursor:pointer; transition:background .15s;
+}
+.mktt-read:hover { background:#e8bc66; }
+.pp-yr  { font-size:.7rem; color:#d4a853; margin-top:2px; }
+.leaflet-popup-close-button { color:#7a6030 !important; }
+.leaflet-control-zoom a { background:#1a1610 !important; border-color:#352b18 !important; color:#8a7040 !important; }
+.leaflet-control-zoom a:hover { background:#2a2010 !important; color:#d4a853 !important; }
+.leaflet-bar { border-color:#352b18 !important; }
+
+/* Marker dot pulse */
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 6px var(--mc); }
+  50%      { box-shadow: 0 0 14px var(--mc), 0 0 24px var(--mc); }
+}
+.mdot {
+  border-radius:50%;
+  border:1.5px solid rgba(255,255,255,.4);
+  animation:pulse 2.4s ease-in-out infinite;
+  cursor:pointer;
+  transition:transform .15s;
+}
+.mdot:hover { transform:scale(1.4); }
+@keyframes selRipple {
+  0%   { box-shadow: 0 0 0 0   rgba(212,168,83,.85), 0 0 18px var(--mc); }
+  65%  { box-shadow: 0 0 0 11px rgba(212,168,83,0),  0 0 24px var(--mc); }
+  100% { box-shadow: 0 0 0 0   rgba(212,168,83,0),   0 0 18px var(--mc); }
+}
+.mdot.sel {
+  border: 2.5px solid rgba(255,255,255,.95);
+  animation: selRipple 1.7s ease-out infinite !important;
+  transform: scale(1.65);
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ══════════════════════════════════════════════════════════
+   CONSTANTS & DATA
+══════════════════════════════════════════════════════════ */
+
+// Bounds that show all regions: Egypt → Persia, Yemen → Anatolia
+const FULL_BOUNDS = [[8, 22], [44, 68]];
+
+const ERAS = [
+  {from:1, to:11, en:"Era of the Prophet ﷺ",           ru:"Эпоха Пророка ﷺ"},
+  {from:11,to:13, en:"Caliphate of Abu Bakr",           ru:"Халифат Абу Бакра"},
+  {from:13,to:23, en:"Caliphate of Umar ibn al-Khattab",ru:"Халифат Умара"},
+  {from:23,to:36, en:"Caliphate of Uthman ibn Affan",   ru:"Халифат Усмана"},
+];
+
+const TYPES = {
+  battle:  {color:"#C0392B", icon:"⚔️", en:"Battle",   ru:"Битва"},
+  treaty:  {color:"#2471A3", icon:"📜", en:"Treaty",   ru:"Договор"},
+  journey: {color:"#D4AC0D", icon:"🌙", en:"Journey",  ru:"Поход"},
+  conquest:{color:"#1E8449", icon:"🏹", en:"Conquest", ru:"Завоевание"},
+  event:   {color:"#7D3C98", icon:"◆",  en:"Event",    ru:"Событие"},
+};
+
+const LOCS = {
+  mecca:       {en:"Mecca",      ru:"Мекка",       lat:21.4225,lng:39.8262},
+  medina:      {en:"Medina",     ru:"Медина",       lat:24.4672,lng:39.6151},
+  badr:        {en:"Badr",       ru:"Бадр",         lat:23.734, lng:38.792},
+  uhud:        {en:"Uhud",       ru:"Ухуд",         lat:24.51,  lng:39.699},
+  hudaybiyyah: {en:"Hudaybiyyah",ru:"Худайбия",     lat:21.445, lng:39.565},
+  khaybar:     {en:"Khaybar",    ru:"Хайбар",       lat:25.696, lng:39.289},
+  tabuk:       {en:"Tabuk",      ru:"Табук",         lat:28.384, lng:36.566},
+  arafat:      {en:"Arafat",     ru:"Арафат",        lat:21.355, lng:39.984},
+  yamama:      {en:"Yamama",     ru:"Ямама",         lat:24.088, lng:47.322},
+  damascus:    {en:"Damascus",   ru:"Дамаск",        lat:33.510, lng:36.291},
+  yarmouk:     {en:"Yarmouk",    ru:"Ярмук",         lat:32.676, lng:35.923},
+  qadisiyyah:  {en:"Qadisiyyah", ru:"Кадисийя",     lat:31.697, lng:44.477},
+  jerusalem:   {en:"Jerusalem",  ru:"Иерусалим",     lat:31.768, lng:35.214},
+  alexandria:  {en:"Alexandria", ru:"Александрия",   lat:31.199, lng:29.919},
+};
+
+// ── Visual style per route category ──────────────────────
+const ROUTE_STYLES = {
+  journey:    { color:'#D4AC0D', weight:2.5, glow:true,  dashFinal:null   }, // solid gold + glow
+  expedition: { color:'#C0392B', weight:2.0, glow:false, dashFinal:'12 7' }, // dashed crimson
+  conquest:   { color:'#1E8449', weight:2.2, glow:false, dashFinal:'4 5'  }, // short-dash green
+  diplomatic: { color:'#2471A3', weight:1.8, glow:false, dashFinal:'2 7'  }, // dotted blue
+};
+
+// ── Multi-waypoint campaign routes ────────────────────────
+// pts: [[lat, lng], ...] following documented historical paths.
+// evId links to the corresponding EVENTS entry for timeline filtering.
+const CAMPAIGN_ROUTES = [
+  { id:'rt_hijra',      evId:'hijra',         year:1,  cat:'journey',
+    pts:[[21.42,39.83],[20.9,39.5],[21.2,38.9],[22.2,38.6],[23.4,38.5],[24.47,39.62]] },
+  { id:'rt_badr',       evId:'badr',          year:2,  cat:'expedition',
+    pts:[[24.47,39.62],[24.0,39.2],[23.73,38.79]] },
+  { id:'rt_uhud',       evId:'uhud',          year:3,  cat:'expedition',
+    pts:[[24.47,39.62],[24.51,39.70]] },
+  { id:'rt_hudaybiyyah',evId:'hudaybiyyah',   year:6,  cat:'diplomatic',
+    pts:[[24.47,39.62],[23.4,39.65],[22.3,39.62],[21.45,39.57]] },
+  { id:'rt_khaybar',    evId:'khaybar',       year:7,  cat:'expedition',
+    pts:[[24.47,39.62],[25.1,39.45],[25.70,39.29]] },
+  { id:'rt_mecca',      evId:'conquest_mecca',year:8,  cat:'conquest',
+    pts:[[24.47,39.62],[23.4,39.65],[22.3,39.72],[21.42,39.83]] },
+  { id:'rt_tabuk',      evId:'tabuk',         year:9,  cat:'expedition',
+    pts:[[24.47,39.62],[25.6,38.8],[27.0,37.6],[28.38,36.57]] },
+  { id:'rt_hajj',       evId:'farewell_hajj', year:10, cat:'journey',
+    pts:[[24.47,39.62],[22.9,39.65],[21.36,39.98]] },
+  { id:'rt_damascus',   evId:'damascus',      year:14, cat:'conquest',
+    pts:[[24.47,39.62],[27.5,38.5],[30.1,37.4],[31.6,36.7],[33.51,36.29]] },
+  { id:'rt_yarmouk',    evId:'yarmouk',       year:15, cat:'expedition',
+    pts:[[33.51,36.29],[32.68,35.92]] },
+  { id:'rt_qadisiyyah', evId:'qadisiyyah',    year:15, cat:'expedition',
+    pts:[[24.47,39.62],[26.5,42.0],[29.0,44.0],[31.70,44.48]] },
+  { id:'rt_jerusalem',  evId:'jerusalem',     year:16, cat:'diplomatic',
+    pts:[[33.51,36.29],[32.68,35.92],[31.77,35.21]] },
+  { id:'rt_egypt',      evId:'egypt',         year:19, cat:'conquest',
+    pts:[[31.77,35.21],[30.8,32.5],[30.0,31.2],[31.20,29.92]] },
+];
+
+const REGION_LABELS = [
+  {lat:39,  lng:33,  en:'ANATOLIA',    ru:'АНАТОЛИЯ',     color:'#7088c0'},
+  {lat:35,  lng:36.5,en:'LEVANT',      ru:'ЛЕВАНТ',        color:'#7088c0'},
+  {lat:30,  lng:30.5,en:'EGYPT',       ru:'ЕГИПЕТ',        color:'#7088c0'},
+  {lat:36.5,lng:53,  en:'PERSIA',      ru:'ПЕРСИЯ',        color:'#b86830'},
+  {lat:37,  lng:67,  en:'KHORASAN',   ru:'ХОРАСАН',       color:'#b86830'},
+  {lat:33,  lng:44.5,en:'MESOPOTAMIA',ru:'МЕСОПОТАМИЯ',   color:'#b86830'},
+  {lat:23.5,lng:46,  en:'ARABIA',      ru:'АРАВИЯ',        color:'#a09030'},
+  {lat:24,  lng:39.8,en:'HEJAZ',       ru:'ХИДЖАЗ',        color:'#a09030'},
+  {lat:15.5,lng:47,  en:'YEMEN',       ru:'ЙЕМЕН',         color:'#907820'},
+];
+
+// ── Empire polygons (622 CE) ──────────────────────────────
+const BYZANTINE_POLYS = [
+  [[42,26.5],[41.5,30],[42,35],[42,44],[38.5,44],[37.5,42],[36.5,40.5],
+   [34.5,37.5],[33.5,36.5],[32,35.5],[31.5,35],[29.5,34.5],[28.8,34],
+   [28.5,32.5],[29.5,31.5],[30.5,30.5],[31,28.5],[31.5,27],[32,26],[36.5,26.5]],
+  [[31.5,25],[22.5,25],[22,29],[23.5,34.5],[29,35.5],[30.5,34],[31.5,33]],
+];
+const SASSANID_POLYS = [
+  [[38.5,44],[40,46],[40.5,52],[40,57],[38,62],[35.5,63.5],[29,62],[25,60],
+   [22.5,57.5],[22.5,52],[24,49.5],[26,47],[29.5,46],[29.5,44],[34,44]],
+];
+const FREE_ARABIA_POLYS = [
+  [[29.5,35],[29.5,47],[26,49.5],[22.5,55.5],[17.5,55.5],[13,52],
+   [12,44],[15,42],[18,38],[20,36.5],[23,36]],
+];
+
+// ── Incremental expansion zones (non-overlapping) ────────
+const EXPANSION_ZONES = [
+  { id:'med_core', fromYear:1,  // Medina + central Hejaz
+    polys:[[[27,37.5],[23,36.5],[21.5,38.5],[20.5,40.5],[21,42.5],[23.5,43],[27,41.5]]] },
+  { id:'hejaz_n',  fromYear:6,  // North extension: Khaybar + Tabuk approach
+    polys:[[[29,36],[27,36],[27,41.5],[29,41.5]]] },
+  { id:'mecca_s',  fromYear:8,  // South extension: Mecca + south Hejaz
+    polys:[[[21.5,38.5],[18.5,38],[18,41.5],[21,43],[21.5,42.5]]] },
+  { id:'tabuk_n',  fromYear:9,  // Far north (Tabuk)
+    polys:[[[30.5,35.5],[29,35.5],[29,42],[30.5,42]]] },
+  { id:'arabia',   fromYear:13, // Rest of Arabian Peninsula
+    polys:[[[29.5,42],[29.5,50],[26,57],[22,59.5],[17.5,57],[13,52],[12,44],[15,42],[18.5,38],[18.5,43.5],[21,45],[25,44],[29,43]]] },
+  { id:'levant',   fromYear:15, // Syria, Levant, Jordan
+    polys:[[[37.5,35.5],[29.5,35.5],[29.5,44],[37.5,44]]] },
+  { id:'iraq',     fromYear:15, // Mesopotamia (Iraq)
+    polys:[[[38,44],[29.5,44],[29.5,51.5],[38,51.5]]] },
+  { id:'egypt',    fromYear:20, // Egypt
+    polys:[[[31.5,25],[22.5,25],[22,29],[23.5,34.5],[29,35.5],[31.5,34]]] },
+  { id:'libya',    fromYear:25, // Libya coast
+    polys:[[[32.5,13],[22.5,13],[22.5,25],[31.5,25],[32.5,20]]] },
+  { id:'w_persia', fromYear:25, // Western Persia
+    polys:[[[38,51.5],[38,61],[30,61],[24,57],[26,57],[29.5,51.5]]] },
+];
+
+// ── Events ───────────────────────────────────────────────
+const EVENTS = [
+  {id:"hijra",     year:1, type:"journey", loc:"medina",  icon:"🌙",
+   title:{en:"Al-Hijra — Migration to Medina",ru:"Хиджра — переселение в Медину",ar:"الهجرة النبوية"},
+   date:{h:"1 AH",g:"622 CE"},place:{en:"Mecca → Medina",ru:"Мекка → Медина"},
+   summary:{en:"The Prophet ﷺ and companions migrated from Mecca to Medina, founding the first Muslim state and the Islamic calendar.",ru:"Пророк и сподвижники переселились из Мекки в Медину, основав первое государство."},
+   route:{from:"mecca",to:"medina"},
+   participants:[{name:"Prophet Muhammad ﷺ",role:"leader"},{name:"Abu Bakr al-Siddiq",role:"companion"},{name:"Ali ibn Abi Talib",role:"decoy in Mecca"}],
+   consequences:["Hijri calendar begins","First Muslim state established","Al-Masjid an-Nabawi built"],
+   quran:"22:39",sources:["Sahih al-Bukhari","Sirah Ibn Hisham"]},
+
+  {id:"masjid",   year:1, type:"event",   loc:"medina",  icon:"🕌",
+   title:{en:"Building of Al-Masjid an-Nabawi",ru:"Строительство Мечети Пророка",ar:"بناء المسجد النبوي"},
+   date:{h:"1 AH",g:"622 CE"},place:{en:"Medina",ru:"Медина"},
+   summary:{en:"The Prophet built the first mosque on land purchased from two orphans — the heart of the new state.",ru:"Первая мечеть на земле, купленной у двух сирот."},
+   consequences:["First purpose-built mosque","The Prophet is buried here","One of the world's largest mosques today"],
+   sources:["Sahih al-Bukhari"]},
+
+  {id:"brotherhood",year:1,type:"event",  loc:"medina",  icon:"🤝",
+   title:{en:"Brotherhood of Muhajirun & Ansar",ru:"Братство мухаджиров и ансаров",ar:"المؤاخاة"},
+   date:{h:"1 AH",g:"622 CE"},place:{en:"Medina",ru:"Медина"},
+   summary:{en:"The Prophet paired each Meccan emigrant with a Medinan helper, creating bonds deeper than blood.",ru:"Каждый мекканский переселенец получил мединского брата."},
+   consequences:["Unity of the Ummah","Material support for emigrants","Foundation of Islamic society"],
+   sources:["Sahih al-Bukhari"]},
+
+  {id:"badr",     year:2, type:"battle",  loc:"badr",    icon:"⚔️",
+   title:{en:"Battle of Badr",ru:"Битва при Бадре",ar:"غزوة بدر الكبرى"},
+   date:{h:"17 Ramadan, 2 AH",g:"March 624 CE"},place:{en:"Wells of Badr",ru:"Колодцы Бадра"},
+   summary:{en:"313 Muslims defeated a Qurayshi army of ~1,000. First and most decisive military victory.",ru:"313 мусульман разбили ~1000 курайшитов. Первая великая победа."},
+   forces:{m:{n:313,cmd:"Prophet Muhammad ﷺ"},e:{n:1000,cmd:"Abu Jahl",f:"Quraysh"}},
+   casualties:{m:{martyred:14},e:{killed:70,captured:70}},
+   participants:[{name:"Prophet Muhammad ﷺ",role:"commander"},{name:"Hamza ibn Abdul-Muttalib",role:"warrior"},{name:"Abu Jahl",role:"Quraysh chief, slain"}],
+   consequences:["Muslim credibility established","Prisoners humanely treated","Mass morale boost"],
+   quran:"3:123",sources:["Sahih al-Bukhari","Sirah Ibn Hisham"]},
+
+  {id:"qibla",    year:2, type:"event",   loc:"medina",  icon:"🕋",
+   title:{en:"Change of Qibla to Mecca",ru:"Смена киблы в сторону Мекки",ar:"تحويل القبلة"},
+   date:{h:"2 AH",g:"624 CE"},place:{en:"Medina",ru:"Медина"},
+   summary:{en:"The direction of prayer changed from Jerusalem to the Kaaba in Mecca.",ru:"Направление молитвы изменено с Иерусалима на Каабу."},
+   consequences:["Kaaba became focal point of all Muslim prayer"],quran:"2:144",sources:["Sahih al-Bukhari"]},
+
+  {id:"uhud",     year:3, type:"battle",  loc:"uhud",    icon:"⚔️",
+   title:{en:"Battle of Uhud",ru:"Битва при Ухуде",ar:"غزوة أحد"},
+   date:{h:"3 AH",g:"625 CE"},place:{en:"Mount Uhud, Medina",ru:"Гора Ухуд, Медина"},
+   summary:{en:"Archers abandoned their posts; the tide turned. 70 martyred including Hamza.",ru:"Лучники покинули позиции. 70 мучеников, включая Хамзу."},
+   forces:{m:{n:700,cmd:"Prophet Muhammad ﷺ"},e:{n:3000,cmd:"Abu Sufyan",f:"Quraysh"}},
+   casualties:{m:{martyred:70},e:{killed:22}},
+   participants:[{name:"Hamza ibn Abdul-Muttalib",role:"martyr, uncle of the Prophet"},{name:"Khalid ibn al-Walid",role:"Quraysh cavalry (pre-Islam)"}],
+   consequences:["70 martyred","Prophet wounded","Lesson: obedience above all"],quran:"3:152",sources:["Sahih al-Bukhari"]},
+
+  {id:"trench",   year:5, type:"battle",  loc:"medina",  icon:"🏰",
+   title:{en:"Battle of the Trench (Khandaq)",ru:"Битва у Рва (Хандак)",ar:"غزوة الخندق"},
+   date:{h:"5 AH",g:"627 CE"},place:{en:"Medina (north)",ru:"Медина (север)"},
+   summary:{en:"A 10,000-strong coalition besieged Medina. Muslims dug a trench — Salman al-Farisi's strategy. Coalition withdrew after 27 days.",ru:"Коалиция 10 000 осадила Медину. Ров Салмана. Осада провалилась."},
+   forces:{m:{n:3000,cmd:"Prophet Muhammad ﷺ"},e:{n:10000,cmd:"Abu Sufyan",f:"Ahzab coalition"}},
+   consequences:["Coalition withdrew after 27 days","Last major Quraysh offensive","Prophet declared: Now we march against them"],
+   quran:"33:10",sources:["Sahih al-Bukhari"]},
+
+  {id:"hudaybiyyah",year:6,type:"treaty", loc:"hudaybiyyah",icon:"📜",
+   title:{en:"Treaty of Hudaybiyyah",ru:"Договор при Худайбии",ar:"صلح الحديبية"},
+   date:{h:"6 AH",g:"628 CE"},place:{en:"Hudaybiyyah, near Mecca",ru:"Худайбия, близ Мекки"},
+   summary:{en:"A 10-year peace with Quraysh — seemingly unfavorable, yet Allah called it a clear victory.",ru:"10-летний мир с курайшитами — названный Аллахом явной победой."},
+   terms:["No war for 10 years","Muslims return this year without Umrah","Those fleeing to Muslims shall be returned"],
+   consequences:["Quraysh recognized Muslim state","More converts in 2 years than in 18","Khalid and Amr ibn al-As embraced Islam"],
+   quran:"48:1",sources:["Sahih al-Bukhari"]},
+
+  {id:"khaybar",  year:7, type:"battle",  loc:"khaybar", icon:"⚔️",
+   title:{en:"Battle of Khaybar",ru:"Битва при Хайбаре",ar:"غزوة خيبر"},
+   date:{h:"7 AH",g:"628 CE"},place:{en:"Khaybar, northern Arabia",ru:"Хайбар, северная Аравия"},
+   summary:{en:"Muslims captured the fortified strongholds of Khaybar. Ali led the assault.",ru:"Мусульмане взяли укрепления Хайбара. Али возглавил штурм."},
+   participants:[{name:"Ali ibn Abi Talib",role:"flag bearer and assault commander"}],
+   consequences:["All fortresses fell","Northern routes secured"],sources:["Sahih al-Bukhari"]},
+
+  {id:"conquest_mecca",year:8,type:"conquest",loc:"mecca",icon:"🕋",
+   title:{en:"Conquest of Mecca",ru:"Завоевание Мекки",ar:"فتح مكة المكرمة"},
+   date:{h:"20 Ramadan, 8 AH",g:"January 630 CE"},place:{en:"Mecca",ru:"Мекка"},
+   summary:{en:"The Prophet ﷺ entered Mecca with 10,000 companions. Nearly bloodless. General amnesty. 360 idols destroyed.",ru:"10 000 сподвижников. Почти без крови. Амнистия. 360 идолов уничтожены."},
+   forces:{m:{n:10000,cmd:"Prophet Muhammad ﷺ"}},
+   route:{from:"medina",to:"mecca"},
+   consequences:["Kaaba restored to monotheism","Mass acceptance of Islam","Bilal gave first adhan from the Kaaba","General amnesty — no looting"],
+   quran:"110:1-2",sources:["Sahih al-Bukhari","Sirah Ibn Kathir"]},
+
+  {id:"tabuk",    year:9, type:"journey", loc:"tabuk",   icon:"🏜️",
+   title:{en:"Expedition of Tabuk",ru:"Поход на Табук",ar:"غزوة تبوك"},
+   date:{h:"9 AH",g:"630 CE"},place:{en:"Tabuk, northern Arabia",ru:"Табук, северная Аравия"},
+   summary:{en:"The Prophet's last expedition — 700 km north to the Byzantine border. No battle; several communities submitted.",ru:"Последний поход — 700 км на север. Сражения не было."},
+   consequences:["Islamic authority reached Byzantine border","Last major expedition"],quran:"9:38",sources:["Sahih al-Bukhari"]},
+
+  {id:"farewell_hajj",year:10,type:"event",loc:"arafat",icon:"🕋",
+   title:{en:"The Farewell Pilgrimage",ru:"Прощальное паломничество",ar:"حجة الوداع"},
+   date:{h:"10 AH",g:"March 632 CE"},place:{en:"Mecca — Mount Arafat",ru:"Мекка — Гора Арафат"},
+   summary:{en:"The Prophet's only Hajj with 100,000+ companions. The Farewell Sermon. Religion declared perfected.",ru:"Единственный хадж с 100 000+. Прощальная проповедь. Религия совершенна."},
+   consequences:["Hajj rites permanently established","Islam declared complete — Quran 5:3"],
+   quran:"5:3",sources:["Sahih al-Bukhari","Sahih Muslim"]},
+
+  {id:"death_prophet",year:11,type:"event",loc:"medina",icon:"🌿",
+   title:{en:"Passing of the Prophet ﷺ",ru:"Уход Пророка ﷺ",ar:"وفاة النبي ﷺ"},
+   date:{h:"12 Rabi al-Awwal, 11 AH",g:"8 June 632 CE"},place:{en:"Medina — house of Aisha",ru:"Медина — дом Аиши"},
+   summary:{en:"The Prophet Muhammad ﷺ passed away at 63. Abu Bakr was elected first Caliph.",ru:"Пророк скончался в 63 года. Абу Бакр избран халифом."},
+   consequences:["Quran fully preserved","Islam spread across Arabia","Abu Bakr elected first Caliph"],
+   quran:"3:144",sources:["Sahih al-Bukhari"]},
+
+  {id:"ridda_wars",year:12,type:"battle",loc:"yamama",icon:"⚔️",
+   title:{en:"Wars of Ridda",ru:"Войны Ридды",ar:"حروب الردة"},
+   date:{h:"11–12 AH",g:"632–633 CE"},place:{en:"Yamama & Arabia",ru:"Ямама и Аравия"},
+   summary:{en:"Abu Bakr fought apostate tribes, preserving the unity of the Islamic state.",ru:"Абу Бакр сохранил единство уммы против вероотступников."},
+   participants:[{name:"Khalid ibn al-Walid",role:"Muslim commander"},{name:"Musaylima al-Kadhdhab",role:"false prophet, slain"}],
+   consequences:["Arabia reunified","Quran compilation prompted"],sources:["Tarikh al-Tabari"]},
+
+  {id:"damascus",year:14,type:"conquest",loc:"damascus",icon:"🏛️",
+   title:{en:"Conquest of Damascus",ru:"Завоевание Дамаска",ar:"فتح دمشق"},
+   date:{h:"Rajab 14 AH",g:"635 CE"},place:{en:"Damascus, Syria",ru:"Дамаск, Сирия"},
+   summary:{en:"Khalid ibn al-Walid took Damascus after 70 nights — half by storm, half by treaty.",ru:"70-ночная осада: наполовину штурмом, наполовину договором."},
+   participants:[{name:"Abu Ubayda ibn al-Jarrah",role:"commander-in-chief"},{name:"Khalid ibn al-Walid",role:"night assault leader"}],
+   consequences:["Byzantine Syria's capital fell","Gateway to all of Syria opened"],sources:["Futuh al-Buldan"]},
+
+  {id:"yarmouk",year:15,type:"battle",loc:"yarmouk",icon:"⚔️",
+   title:{en:"Battle of Yarmouk",ru:"Битва при Ярмуке",ar:"معركة اليرموك"},
+   date:{h:"15 AH",g:"636 CE"},place:{en:"Yarmouk River, Syria",ru:"Река Ярмук, Сирия"},
+   summary:{en:"36,000 Muslims defeated 100,000+ Byzantines. All of Syria opened to Islam.",ru:"36 000 против 100 000+. Вся Сирия открылась."},
+   forces:{m:{n:36000,cmd:"Khalid ibn al-Walid"},e:{n:100000,cmd:"Vahan",f:"Byzantine Empire"}},
+   consequences:["All Syria opened","One of the most decisive battles in world history"],sources:["Futuh al-Buldan"]},
+
+  {id:"qadisiyyah",year:15,type:"battle",loc:"qadisiyyah",icon:"⚔️",
+   title:{en:"Battle of al-Qadisiyyah",ru:"Битва при Кадисийе",ar:"معركة القادسية"},
+   date:{h:"15 AH",g:"636 CE"},place:{en:"al-Qadisiyyah, Iraq",ru:"Кадисийя, Ирак"},
+   summary:{en:"Sa'd ibn Abi Waqqas defeated the Sassanid Empire, opening all of Mesopotamia to Islam.",ru:"Са'д разгромил Сасанидов. Вся Месопотамия открылась."},
+   forces:{m:{n:30000,cmd:"Sa'd ibn Abi Waqqas"},e:{n:100000,cmd:"Rustam Farrokhzad",f:"Sassanid Empire",elephants:true}},
+   consequences:["Mesopotamia fell","Ctesiphon (al-Madain) fell","End of Sassanid Empire"],sources:["Tarikh al-Tabari"]},
+
+  {id:"jerusalem",year:16,type:"conquest",loc:"jerusalem",icon:"🕌",
+   title:{en:"Surrender of Jerusalem",ru:"Сдача Иерусалима",ar:"فتح بيت المقدس"},
+   date:{h:"16 AH",g:"638 CE"},place:{en:"Jerusalem (al-Quds)",ru:"Иерусалим (аль-Кудс)"},
+   summary:{en:"Patriarch Sophronius surrendered Jerusalem peacefully — only to Caliph Umar in person.",ru:"Патриарх сдал Иерусалим лично халифу Умару."},
+   consequences:["Third holiest city under Muslim rule","Jews allowed to return","Covenant of Umar — model of just governance"],sources:["Tarikh al-Tabari"]},
+
+  {id:"egypt",    year:19,type:"conquest",loc:"alexandria",icon:"🏺",
+   title:{en:"Conquest of Egypt",ru:"Завоевание Египта",ar:"فتح مصر"},
+   date:{h:"19–21 AH",g:"640–642 CE"},place:{en:"Egypt — Alexandria",ru:"Египет — Александрия"},
+   summary:{en:"Amr ibn al-As conquered Egypt with 12,000 men, ending 600+ years of Byzantine rule.",ru:"12 000 воинов завершили 600 лет Byzantium в Египте."},
+   forces:{m:{n:12000,cmd:"Amr ibn al-As"},e:{f:"Byzantine Empire"}},
+   consequences:["Egypt a wealthy province","Gateway to North Africa opened","Arabic became language of Egypt"],sources:["Futuh al-Buldan"]},
+
+  {id:"quran_std",year:25,type:"event",loc:"medina",icon:"📖",
+   title:{en:"Standardization of the Quran",ru:"Стандартизация Корана",ar:"جمع القرآن عثمان"},
+   date:{h:"25 AH",g:"~646 CE"},place:{en:"Medina",ru:"Медина"},
+   summary:{en:"Uthman ibn Affan standardized the Quranic text and sent master copies to each province.",ru:"Усман стандартизировал текст Корана и разослал эталоны по провинциям."},
+   consequences:["The Uthmanic mushaf — the Quran recited today","Prevented textual division"],sources:["Sahih al-Bukhari","Tarikh al-Tabari"]},
+];
+
+const ALL_FILTER_TYPES = ['battle','treaty','journey','conquest','event'];
+
+/* ══════════════════════════════════════════════════════════
+   LEAFLET MAP MANAGER (imperative)
+══════════════════════════════════════════════════════════ */
+function initMap(el) {
+  const map = L.map(el, {
+    preferCanvas: false,
+    zoomControl: true,
+    scrollWheelZoom: true,
+    doubleClickZoom: true,
+  });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd', maxZoom: 19,
+    attribution: '© CARTO'
+  }).addTo(map);
+  return map;
+}
+
+function fitFullBounds(map) {
+  const el = map.getContainer();
+  const w = el.offsetWidth, h = el.offsetHeight;
+  const px = Math.max(20, Math.round(w * 0.04));
+  const py = Math.max(16, Math.round(h * 0.05));
+  map.fitBounds(FULL_BOUNDS, { padding: [py, px], animate: false });
+}
+
+function buildEmpireLayers(map) {
+  const layers = [];
+  BYZANTINE_POLYS.forEach(c =>
+    layers.push(L.polygon(c, {color:'#3355bb',weight:1.5,dashArray:'6,5',fillColor:'#4466dd',fillOpacity:.28,opacity:.7}).addTo(map)));
+  SASSANID_POLYS.forEach(c =>
+    layers.push(L.polygon(c, {color:'#aa3311',weight:1.5,dashArray:'6,5',fillColor:'#cc5522',fillOpacity:.28,opacity:.7}).addTo(map)));
+  FREE_ARABIA_POLYS.forEach(c =>
+    layers.push(L.polygon(c, {color:'#997710',weight:1,dashArray:'4,6',fillColor:'#cc9922',fillOpacity:.18,opacity:.6}).addTo(map)));
+  return layers;
+}
+
+function buildExpansionLayers(map) {
+  _expMap = map;
+  // Create all zones at opacity 0; visibility controlled by setStyle
+  return EXPANSION_ZONES.map(zone => {
+    const polys = zone.polys.map(c =>
+      L.polygon(c, {color:'#1a7a40',weight:1.8,fillColor:'#1e8449',fillOpacity:0,opacity:0}).addTo(map)
+    );
+    return { id: zone.id, fromYear: zone.fromYear, polys };
+  });
+}
+
+// ── Expansion animation state ─────────────────────────────
+let _expAnimated = new Set();  // zone IDs that have already revealed
+let _expLastYear = 0;
+let _expMap      = null;       // Leaflet map reference, set in buildExpansionLayers
+
+// Wave entrance: territory grows radially from its bounding-box centre.
+function animateZoneIn(poly, delayMs) {
+  const path = poly.getElement();
+  if (!path) return;
+  setTimeout(() => {
+    let len = 0;
+    try { len = path.getTotalLength(); } catch(e) {}
+    // Duration scales with perimeter: small zones ~850ms, large zones ~1300ms
+    const dur = Math.min(1300, Math.max(850, len * 0.75));
+
+    // Set final visual state immediately — clip-path acts as the reveal mask.
+    // Overriding the CSS class transition to 'none' ensures fillOpacity jumps
+    // instantly (no unwanted fade while the clip circle is still at 0%).
+    poly.setStyle({ opacity: 1, fillOpacity: 0.38 });
+    path.style.transition = 'none';
+    path.style.clipPath   = 'circle(0% at 50% 50%)';
+    path.getBoundingClientRect();  // force reflow so start-state is committed
+
+    // Phase 1 — radial wave: clip circle expands from centre to full coverage.
+    // Only clip-path is transitioned; fill-opacity changes remain instant.
+    path.style.transition = `clip-path ${dur}ms cubic-bezier(0.15, 0, 0.30, 1)`;
+    requestAnimationFrame(() => {
+      path.style.clipPath = 'circle(150% at 50% 50%)';
+    });
+
+    // Phase 2 — after wave settles: glow pulse then ease back, border thickens.
+    setTimeout(() => {
+      path.style.clipPath   = '';  // clip no longer needed; restore natural rendering
+
+      // Glow pulse: briefly brighten fill, then ease back to resting opacity
+      path.style.transition = 'fill-opacity 160ms ease-out';
+      poly.setStyle({ fillOpacity: 0.60 });
+      setTimeout(() => {
+        path.style.transition = 'fill-opacity 550ms ease-in-out';
+        poly.setStyle({ fillOpacity: 0.38 });
+        setTimeout(() => { path.style.transition = ''; }, 600);
+      }, 200);
+
+      // Border pulse: briefly thicken then settle back via CSS ease-in-out
+      path.style.strokeWidth = '3.5px';
+      setTimeout(() => { path.style.strokeWidth = ''; }, 300);
+    }, dur + 40);
+  }, delayMs);
+}
+
+function updateExpansionLayers(expansionLayers, year, islamicOn = true) {
+  if (!islamicOn) {
+    expansionLayers.forEach(zone => zone.polys.forEach(p => p.setStyle({ fillOpacity: 0, opacity: 0 })));
+    return;
+  }
+  // When scrubbing backward, forget animations for zones now out of range
+  if (year < _expLastYear) {
+    for (const id of [..._expAnimated]) {
+      const zone = EXPANSION_ZONES.find(z => z.id === id);
+      if (zone && zone.fromYear > year) _expAnimated.delete(id);
+    }
+  }
+  const prevYear  = _expLastYear;
+  _expLastYear    = year;
+
+  let stagger = 0;
+  expansionLayers.forEach(zone => {
+    const vis   = zone.fromYear <= year;
+    const isNew = vis && !_expAnimated.has(zone.id) && year > prevYear;
+
+    if (isNew) {
+      // First time this zone appears — animate it in
+      _expAnimated.add(zone.id);
+      zone.polys.forEach(p => {
+        p.setStyle({ opacity: 0, fillOpacity: 0 });   // fully hidden until wave begins
+        animateZoneIn(p, stagger);
+        stagger += 160;   // slight stagger between multiple polygons / zones
+      });
+    } else if (vis) {
+      // Already revealed — jump to final state (handles rebuilds & backward scrubs)
+      zone.polys.forEach(p => {
+        const path = p.getElement();
+        if (path) { path.style.clipPath = ''; path.style.transition = ''; }
+        p.setStyle({ fillOpacity: 0.38, opacity: 1 });
+      });
+    } else {
+      // Not yet in timeline — keep hidden
+      zone.polys.forEach(p => p.setStyle({ fillOpacity: 0, opacity: 0 }));
+    }
+  });
+}
+
+function updateEmpireLayerVis(empireLayers, byzantineOn, sassanidOn, arabiaOn) {
+  // Byzantine = first BYZANTINE_POLYS.length layers
+  const bl = BYZANTINE_POLYS.length, sl = SASSANID_POLYS.length, al = FREE_ARABIA_POLYS.length;
+  empireLayers.slice(0, bl).forEach(l => l.setStyle({ fillOpacity: byzantineOn ? .28 : 0, opacity: byzantineOn ? .7 : 0 }));
+  empireLayers.slice(bl, bl+sl).forEach(l => l.setStyle({ fillOpacity: sassanidOn ? .28 : 0, opacity: sassanidOn ? .7 : 0 }));
+  empireLayers.slice(bl+sl, bl+sl+al).forEach(l => l.setStyle({ fillOpacity: arabiaOn ? .18 : 0, opacity: arabiaOn ? .6 : 0 }));
+}
+
+let _regionLabelLayers = [];
+function buildRegionLabels(map, lang) {
+  _regionLabelLayers.forEach(l => map.removeLayer(l));
+  _regionLabelLayers = [];
+  REGION_LABELS.forEach(r => {
+    const txt = lang === 'ru' ? r.ru : r.en;
+    const ic = L.divIcon({ className:'rl', html:`<div class="rl-t" style="color:${r.color}">${txt}</div>`, iconAnchor:[0,0] });
+    _regionLabelLayers.push(L.marker([r.lat, r.lng], { icon: ic, interactive: false }).addTo(map));
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   ANIMATED CAMPAIGN ROUTES
+══════════════════════════════════════════════════════════ */
+let _rtLayers   = [];          // { main: Polyline, glow: Polyline|null }[]
+let _rtAnimated = new Set();   // route IDs already drawn in this session
+let _rtLastYear = 0;
+
+// A small glowing dot that travels the route while it draws.
+function addTravelDot(map, pts, color, duration) {
+  const dot = L.circleMarker(pts[0], {
+    radius: 4.5, fillColor: color, fillOpacity: 1,
+    color: '#fff', weight: 1.5, opacity: 0.95, interactive: false,
+  }).addTo(map);
+
+  let cum = 0;
+  const segs = [];
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i-1], b = pts[i], d = Math.hypot(b[0]-a[0], b[1]-a[1]);
+    segs.push({ a, b, d, cs: cum }); cum += d;
+  }
+  const totalLen = cum;
+  const t0 = performance.now();
+
+  function tick(now) {
+    const p   = Math.min((now - t0) / duration, 1);
+    const tgt = p * totalLen;
+    let pos   = L.latLng(...pts[pts.length - 1]);
+    for (const s of segs) {
+      if (s.cs + s.d >= tgt) {
+        const f = s.d > 0 ? (tgt - s.cs) / s.d : 0;
+        pos = L.latLng(s.a[0] + (s.b[0]-s.a[0])*f, s.a[1] + (s.b[1]-s.a[1])*f);
+        break;
+      }
+    }
+    dot.setLatLng(pos);
+    if (p < 1) requestAnimationFrame(tick); else map.removeLayer(dot);
+  }
+  requestAnimationFrame(tick);
+}
+
+function buildAnimatedRoutes(map, year, filters) {
+  // Remove all previous route layers
+  _rtLayers.forEach(({ main, glow }) => {
+    map.removeLayer(main);
+    if (glow) map.removeLayer(glow);
+  });
+  _rtLayers = [];
+
+  // Forget animation state for routes that have scrolled out of view
+  if (year < _rtLastYear) {
+    const stillVis = new Set(
+      CAMPAIGN_ROUTES
+        .filter(r => { const e = EVENTS.find(x => x.id === r.evId); return e && e.year <= year && filters.has(e.type); })
+        .map(r => r.id)
+    );
+    for (const id of [..._rtAnimated]) { if (!stillVis.has(id)) _rtAnimated.delete(id); }
+  }
+  const prevYear  = _rtLastYear;
+  _rtLastYear     = year;
+
+  CAMPAIGN_ROUTES.forEach(route => {
+    const ev = EVENTS.find(e => e.id === route.evId);
+    if (!ev || ev.year > year || !filters.has(ev.type)) return;
+
+    const st  = ROUTE_STYLES[route.cat];
+    const pts = route.pts;
+
+    // Glow layer (journeys only — wide, feather-soft halo)
+    const glow = st.glow
+      ? L.polyline(pts, { color: st.color, weight: 9, opacity: 0.12, interactive: false }).addTo(map)
+      : null;
+
+    const main = L.polyline(pts, {
+      color: st.color, weight: st.weight, opacity: 0.80, interactive: false,
+    }).addTo(map);
+
+    _rtLayers.push({ main, glow });
+
+    const isNew = !_rtAnimated.has(route.id) && year > prevYear;
+
+    if (isNew) {
+      _rtAnimated.add(route.id);
+
+      // Animation duration proportional to geographic length of route
+      const dist = pts.reduce((acc, p, i) =>
+        i === 0 ? 0 : acc + Math.hypot(p[0]-pts[i-1][0], p[1]-pts[i-1][1]), 0);
+      const dur = Math.max(900, Math.min(2400, dist * 90));
+
+      requestAnimationFrame(() => {
+        [main, glow].filter(Boolean).forEach(poly => {
+          const path = poly.getElement(); if (!path) return;
+          const len = path.getTotalLength();
+          path.style.strokeDasharray  = `${len} ${len}`;
+          path.style.strokeDashoffset = len;
+          path.style.transition = 'none';
+          path.getBoundingClientRect();   // force reflow
+          path.style.transition = `stroke-dashoffset ${dur}ms cubic-bezier(0.4,0,0.15,1)`;
+          path.style.strokeDashoffset = '0';
+        });
+
+        addTravelDot(map, pts, st.color, dur);
+
+        // After draw completes, swap in the decorative dash pattern
+        if (st.dashFinal) {
+          setTimeout(() => {
+            const path = main.getElement(); if (!path) return;
+            path.style.transition       = 'none';
+            path.style.strokeDasharray  = st.dashFinal;
+            path.style.strokeDashoffset = '0';
+          }, dur + 60);
+        }
+      });
+    } else {
+      // Already drawn — jump straight to final appearance
+      requestAnimationFrame(() => {
+        const mp = main.getElement();
+        if (mp) { mp.style.strokeDasharray = st.dashFinal || ''; mp.style.strokeDashoffset = '0'; }
+        if (glow) { const gp = glow.getElement(); if (gp) { gp.style.strokeDasharray = ''; gp.style.strokeDashoffset = '0'; } }
+      });
+    }
+  });
+}
+
+let _markerLayers = [];
+let _globalMap    = null;
+let _hoverCard    = null;
+
+function initHoverCard(map) {
+  if (_hoverCard && _hoverCard.isConnected) return;
+  _hoverCard = null;
+  const div = document.createElement('div');
+  div.className = 'marker-hover-card';
+  div.style.display = 'none';
+  map.getContainer().appendChild(div);
+  _hoverCard = div;
+  // Hide when clicking anywhere on map (but not the card itself)
+  map.getContainer().addEventListener('click', (e) => {
+    if (!e.target.closest('.marker-hover-card')) {
+      _hoverCard.style.display = 'none';
+    }
+  });
+  // Hide on map move/zoom
+  map.on('movestart', () => { _hoverCard.style.display = 'none'; });
+}
+
+function buildMarkers(map, year, filters, lang, onSelect, selectedId) {
+  window._onMarkerSelect = (id) => { if (window._onReadPage) window._onReadPage(id); };
+  _markerLayers.forEach(l => map.removeLayer(l));
+  _markerLayers = [];
+
+  const vis = EVENTS.filter(e => e.year <= year && filters.has(e.type));
+
+  // Group by location
+  const byLoc = {};
+  vis.forEach(ev => { if (!byLoc[ev.loc]) byLoc[ev.loc]=[]; byLoc[ev.loc].push(ev); });
+
+  Object.entries(byLoc).forEach(([lid, evts]) => {
+    const loc = LOCS[lid]; if (!loc) return;
+    evts.forEach((ev, i) => {
+      const lat = loc.lat + i * 0.14, lng = loc.lng + i * 0.06;
+      const sel = ev.id === selectedId;
+      const c = TYPES[ev.type].color;
+      const sz = sel ? 12 : 8;
+
+      // Dot marker with glow
+      const icon = L.divIcon({
+        className: '',
+        html: `<div class="mdot${sel?' sel':''}" style="width:${sz}px;height:${sz}px;background:${c};--mc:${c};${sel?`box-shadow:0 0 0 3px rgba(212,168,83,.45),0 0 14px ${c};`:''}"></div>`,
+        iconSize: [sz,sz], iconAnchor: [sz/2,sz/2], popupAnchor: [0,-sz-2]
+      });
+
+      // Location label (only first event at loc)
+      if (i === 0) {
+        const locName = lang==='ru' ? (loc.ru||loc.en) : loc.en;
+        const lblIcon = L.divIcon({
+          className: '',
+          html: `<div style="font-size:clamp(.5rem,.6vw,.6rem);font-weight:700;letter-spacing:1.2px;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,.75);text-shadow:0 1px 4px #000,0 0 6px #000;pointer-events:none;margin-left:${sz/2+3}px;margin-top:-${sz/2}px;">${locName}</div>`,
+          iconAnchor:[0,0]
+        });
+        const lbl = L.marker([lat,lng],{icon:lblIcon,interactive:false,zIndexOffset:-100}).addTo(map);
+        _markerLayers.push(lbl);
+      }
+
+      const readLabel = lang==='ru' ? 'Читать' : 'Read';
+      const m = L.marker([lat,lng], { icon, zIndexOffset: sel?1000:0 }).addTo(map);
+      initHoverCard(map);
+      m.on('mouseover', function() {
+        if (map.getZoom() < 6) return;
+        const pt = map.latLngToContainerPoint([lat, lng]);
+        _hoverCard.innerHTML =
+          `<div class="mktt">` +
+          `<div class="mktt-title">${ev.icon} ${ev.title[lang]||ev.title.en}</div>` +
+          `<button class="mktt-read" onclick="window._onMarkerSelect('${ev.id}')">${readLabel}</button>` +
+          `</div>`;
+        _hoverCard.style.display = 'block';
+        const w = _hoverCard.offsetWidth || 140;
+        _hoverCard.style.left = (pt.x - w - 8) + 'px';
+        _hoverCard.style.top  = (pt.y + 8) + 'px';
+      });
+      m.on('click', () => onSelect(ev.id));
+      _markerLayers.push(m);
+    });
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   CINEMATIC FLY-TO
+══════════════════════════════════════════════════════════ */
+function cinematicFlyTo(map, lat, lng, zoom) {
+  const el  = map.getContainer();
+  const h   = el.offsetHeight;
+  const targetZoom = zoom != null ? zoom : Math.max(map.getZoom(), 7);
+  // Shift the map center downward in screen space by ~20% of map height.
+  // This places the marker in the upper third of the viewport, just above
+  // the info panel that slides up from the bottom.
+  const offsetPx = h * 0.20;
+  const pt      = map.project(L.latLng(lat, lng), targetZoom);
+  const shifted = map.unproject(L.point(pt.x, pt.y + offsetPx), targetZoom);
+  map.flyTo(shifted, targetZoom, {
+    animate:      true,
+    duration:     2.2,
+    easeLinearity: 0.12,
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   MAP COMPONENT (React wrapper for Leaflet)
+══════════════════════════════════════════════════════════ */
+function MapView({ year, filters, lang, selectedId, layerVis, onSelect, onReadPage }) {
+  const mountRef = useRef(null);
+  const mapRef = useRef(null);
+  const empireRef = useRef(null);
+  const expansionRef = useRef(null);
+  // Keep callbacks fresh
+  const onSelectRef = useRef(onSelect);
+  useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
+  useEffect(() => { window._onReadPage = onReadPage; }, [onReadPage]);
+  // Track previous selection to avoid re-flying on unrelated re-renders
+  const prevSelectedRef = useRef(null);
+
+  // Initialize Leaflet (once)
+  useEffect(() => {
+    const map = initMap(mountRef.current);
+    mapRef.current = map;
+    _globalMap = map;
+    window._flyToEvent = (evId) => {
+      const ev  = EVENTS.find(e => e.id === evId);
+      if (!ev) return;
+      const loc = LOCS[ev.loc];
+      if (!loc) return;
+      map.flyTo([loc.lat, loc.lng], 7, { animate: true, duration: 2.2, easeLinearity: 0.12 });
+    };
+    window._flyToDefault = () => {
+      const el = map.getContainer();
+      const w = el.offsetWidth, h = el.offsetHeight;
+      const px = Math.max(20, Math.round(w * 0.04));
+      const py = Math.max(16, Math.round(h * 0.05));
+      map.flyToBounds(FULL_BOUNDS, { padding: [py, px], duration: 1.8, easeLinearity: 0.15 });
+    };
+    empireRef.current  = buildEmpireLayers(map);
+    expansionRef.current = buildExpansionLayers(map);
+
+    fitFullBounds(map);
+
+    const ro = new ResizeObserver(() => {
+      requestAnimationFrame(() => {
+        map.invalidateSize({ animate: false });
+        fitFullBounds(map);
+      });
+    });
+    ro.observe(mountRef.current);
+
+    return () => { ro.disconnect(); map.remove(); mapRef.current = null; };
+  }, []);
+
+  // Empire visibility
+  useEffect(() => {
+    if (!empireRef.current) return;
+    updateEmpireLayerVis(empireRef.current, layerVis.byzantine, layerVis.sassanid, layerVis.arabia);
+  }, [layerVis.byzantine, layerVis.sassanid, layerVis.arabia]);
+
+  // Expansion zones
+  useEffect(() => {
+    if (!expansionRef.current) return;
+    updateExpansionLayers(expansionRef.current, year, layerVis.islamic);
+  }, [year, layerVis.islamic]);
+
+  // Markers, labels, and animated routes
+  useEffect(() => {
+    if (!mapRef.current) return;
+    buildRegionLabels(mapRef.current, lang);
+    buildMarkers(mapRef.current, year, filters, lang, (id) => onSelectRef.current(id), selectedId);
+    buildAnimatedRoutes(mapRef.current, year, filters);
+  }, [year, filters, lang, selectedId]);
+
+  // Cinematic fly-to: only fires when selectedId newly becomes non-null
+  useEffect(() => {
+    if (!mapRef.current) return;
+    if (!selectedId) { prevSelectedRef.current = null; return; }
+    if (selectedId === prevSelectedRef.current) return;   // same marker re-selected
+    prevSelectedRef.current = selectedId;
+    const ev  = EVENTS.find(e => e.id === selectedId);
+    if (!ev) return;
+    const loc = LOCS[ev.loc];
+    if (!loc) return;
+    cinematicFlyTo(mapRef.current, loc.lat, loc.lng);
+  }, [selectedId]);
+
+
+  return <div ref={mountRef} style={{ position:'absolute', inset:0 }} />;
+}
+
+/* ══════════════════════════════════════════════════════════
+   EVENT FULL PAGE
+══════════════════════════════════════════════════════════ */
+function EventPage({ ev, lang, onBack }) {
+  if (!ev) return null;
+  const type  = TYPES[ev.type];
+  const title = ev.title[lang] || ev.title.en;
+  const summ  = ev.summary ? (ev.summary[lang] || ev.summary.en) : '';
+  const place = ev.place   ? (ev.place[lang]   || ev.place.en)   : '';
+  const isRu  = lang === 'ru';
+
+  return (
+    <div className="event-page">
+      <div className="ep-header">
+        <button className="ep-back" onClick={onBack}>← {isRu ? 'Назад' : 'Back'}</button>
+        <span className="ep-header-title">{ev.date.h} · {ev.date.g}</span>
+      </div>
+
+      <div className="ep-body">
+        <div className="ep-icon">{ev.icon}</div>
+        <div className="ep-title">{title}</div>
+        {ev.title.ar && <div className="ep-title-ar">{ev.title.ar}</div>}
+        <div className="ep-badge" style={{background:`${type.color}22`,color:type.color,border:`1px solid ${type.color}44`}}>
+          {type[isRu ? 'ru' : 'en']}
+        </div>
+
+        <div className="ep-meta">
+          <span>📅 {ev.date.h} / {ev.date.g}</span>
+          {place && <span>📍 {place}</span>}
+        </div>
+
+        {summ && <div className="ep-summary">{summ}</div>}
+
+        {ev.participants && ev.participants.length > 0 && <>
+          <div className="ep-section-title">{isRu ? 'Участники' : 'Participants'}</div>
+          <div className="ep-participants">
+            {ev.participants.map((p,i) => (
+              <div key={i} className="ep-person">
+                <span className="ep-person-name">{p.name}</span>
+                <span className="ep-person-role">{p.role}</span>
+              </div>
+            ))}
+          </div>
+        </>}
+
+        {ev.consequences && ev.consequences.length > 0 && <>
+          <div className="ep-section-title">{isRu ? 'Последствия' : 'Consequences'}</div>
+          <ul className="ep-list">
+            {ev.consequences.map((c,i) => <li key={i}>{c}</li>)}
+          </ul>
+        </>}
+
+        {ev.quran && <>
+          <div className="ep-section-title">{isRu ? 'Коран' : 'Quran Reference'}</div>
+          <div className="ep-quran">📖 Surah {ev.quran}</div>
+        </>}
+
+        {ev.sources && ev.sources.length > 0 && <>
+          <div className="ep-section-title">{isRu ? 'Источники' : 'Sources'}</div>
+          <div className="ep-sources">
+            {ev.sources.map((s,i) => <span key={i} className="ep-source">{s}</span>)}
+          </div>
+        </>}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   UNIT PAGE — one section per event in the same year
+══════════════════════════════════════════════════════════ */
+function UnitPage({ focusId, lang, onBack }) {
+  const L = lang === 'ru';
+  const focusRef = React.useRef(null);
+
+  const focusEv   = EVENTS.find(e => e.id === focusId);
+  const focusYear = focusEv ? focusEv.year : null;
+  const era       = focusEv ? ERAS.find(r => focusEv.year >= r.from && focusEv.year < r.to) : null;
+  const yearEvents = EVENTS.filter(e => e.year === focusYear);
+  const eraName   = era ? (L ? era.ru : era.en) : '';
+
+  React.useEffect(() => {
+    if (focusRef.current) {
+      setTimeout(() => focusRef.current && focusRef.current.scrollIntoView({ behavior:'smooth', block:'start' }), 120);
+    }
+  }, []);
+
+  return (
+    <div className="unit-page">
+      <div className="up-header">
+        <button className="ep-back" onClick={onBack}>← {L ? 'Назад' : 'Back'}</button>
+        <span className="ep-header-title">{eraName} · {focusYear} AH</span>
+      </div>
+
+      <div className="up-body">
+        {yearEvents.map(ev => {
+          const isActive = ev.id === focusId;
+          const title    = ev.title[lang] || ev.title.en;
+          const summ     = ev.summary ? (ev.summary[lang] || ev.summary.en) : '';
+          const type     = TYPES[ev.type];
+
+          // Build sub-items: participants first, then consequences
+          const subItems = [];
+          if (ev.participants) ev.participants.forEach(p => subItems.push({ icon:'👤', label: p.name + (p.role ? ` — ${p.role}` : '') }));
+          if (ev.consequences) ev.consequences.forEach(c => subItems.push({ icon:'›', label: c }));
+
+          return (
+            <div
+              key={ev.id}
+              ref={isActive ? focusRef : null}
+              className={`up-section${isActive ? ' active' : ''}`}
+            >
+              <div className="up-section-title">{title}</div>
+              {summ && <div className="up-section-desc">{summ}</div>}
+
+              {subItems.length > 0 && (
+                <div className="up-item-list">
+                  {subItems.map((item, i) => (
+                    <div key={i} className="up-item-row">
+                      <span className="up-item-icon">{item.icon}</span>
+                      <span className="up-item-label">{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="up-practice-card">
+                <div className="up-pc-left">
+                  <div className="up-pc-title">{title}</div>
+                  <button className="up-pc-btn">{L ? 'Практика' : 'Practice'}</button>
+                </div>
+                <div className="up-pc-right">
+                  <span className="up-pc-status">{L ? 'Не\nначато' : 'Not\nstarted'}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   EVENT INFO CARD
+══════════════════════════════════════════════════════════ */
+function EventDetail({ ev, lang, onClose }) {
+  if (!ev) return null;
+  const type  = TYPES[ev.type];
+  const title = ev.title[lang] || ev.title.en;
+  const summ  = ev.summary ? (ev.summary[lang] || ev.summary.en) : '';
+  const place = ev.place   ? (ev.place[lang]   || ev.place.en)   : '';
+  const isRu  = lang === 'ru';
+
+  return (
+    <div className="ev-overlay open">
+      <div className="ev-inner">
+        <button className="ov-close" onClick={onClose}>×</button>
+
+        <div className="dh">
+          <div className="di">{ev.icon}</div>
+          <div>
+            <div className="dt">{title}</div>
+            {ev.title.ar && <div className="dar">{ev.title.ar}</div>}
+            <span className="dbadge" style={{background:`${type.color}22`,color:type.color,border:`1px solid ${type.color}44`}}>
+              {type[isRu ? 'ru' : 'en']}
+            </span>
+          </div>
+        </div>
+
+        <div className="dmeta">
+          <span className="dyr">{ev.date.h}</span>
+          <span className="dsep">·</span>
+          <span className="dce">{ev.date.g}</span>
+          {place && <><span className="dsep">·</span><span className="dplace">{place}</span></>}
+        </div>
+
+        {summ && <div className="dsum">{summ}</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   LEGEND
+══════════════════════════════════════════════════════════ */
+function Legend({ layerVis, onToggle, lang }) {
+  const L = lang === 'ru';
+  const items = [
+    { key:'islamic',  color:'rgba(26,120,60,.7)',  border:'#2d7a45', en:'Islamic State',  ru:'Исл. государство' },
+    { key:'byzantine',color:'rgba(50,80,180,.6)',  border:'#4466cc', en:'Byzantine',       ru:'Византия' },
+    { key:'sassanid', color:'rgba(180,70,20,.6)',  border:'#c04a18', en:'Sassanid',        ru:'Сасаниды' },
+    { key:'arabia',   color:'rgba(160,120,10,.5)', border:'#c8a020', en:'Free Arabia',     ru:'Св. Аравия' },
+  ];
+  const routes = [
+    { color:'#D4AC0D', dash:'',     en:'Journey',    ru:'Поход'      },
+    { color:'#C0392B', dash:'12 7', en:'Expedition',  ru:'Экспедиция' },
+    { color:'#1E8449', dash:'4 5',  en:'Conquest',    ru:'Завоевание' },
+    { color:'#2471A3', dash:'2 7',  en:'Diplomatic',  ru:'Дипломатия' },
+  ];
+  return (
+    <div className="legend">
+      <div className="leg-title">{L?'Легенда':'Empires'}</div>
+      {items.map(it => (
+        <div key={it.key} className={`leg-row${layerVis[it.key]===false?' off':''}`} onClick={() => onToggle(it.key)}>
+          <div className="leg-swatch" style={{background:it.color,border:`1px solid ${it.border}`}}/>
+          <span>{L ? it.ru : it.en}</span>
+        </div>
+      ))}
+      <hr className="leg-sep"/>
+      {routes.map(r => (
+        <div key={r.en} className="leg-row route">
+          <svg className="leg-line" width="18" height="6" viewBox="0 0 18 6">
+            <line x1="0" y1="3" x2="18" y2="3" stroke={r.color} strokeWidth="2" strokeDasharray={r.dash}/>
+          </svg>
+          <span style={{color:r.color}}>{L ? r.ru : r.en}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   MAIN APP
+══════════════════════════════════════════════════════════ */
+function App() {
+  const [year,       setYear]       = useState(35);
+  const [filters,    setFilters]    = useState(new Set(ALL_FILTER_TYPES));
+  const [lang,       setLang]       = useState('en');
+  const [selectedId, setSelectedId] = useState(null);
+  const [isPlaying,  setIsPlaying]  = useState(false);
+  const [layerVis,   setLayerVis]   = useState({ byzantine:true, sassanid:true, arabia:true, islamic:true });
+  const [popYear,    setPopYear]    = useState(null);
+  const [showDetail,  setShowDetail]  = useState(false);
+  const [pageEvId,    setPageEvId]    = useState(null);
+  const playTimer   = useRef(null);
+  const circlesRef  = useRef(null);
+
+  // Auto-scroll circles to active dot
+  useEffect(() => {
+    const wrap = circlesRef.current;
+    if (!wrap) return;
+    const active = wrap.querySelector('.yr-dot.active');
+    if (!active) return;
+    const dotLeft = active.offsetLeft;
+    const dotW    = active.offsetWidth;
+    const wrapW   = wrap.offsetWidth;
+    wrap.scrollTo({ left: dotLeft - wrapW / 2 + dotW / 2, behavior: 'smooth' });
+  }, [year]);
+
+  // Derived
+  const era     = ERAS.find(e => year >= e.from && year < e.to) || ERAS[ERAS.length-1];
+  const eraText = lang === 'ru' ? era.ru : era.en;
+  const selEv   = selectedId ? EVENTS.find(e => e.id === selectedId) : null;
+
+  // Auto-play
+  const startPlay = useCallback(() => {
+    setIsPlaying(true);
+    let y = year >= 35 ? 1 : year;
+    if (y === year && y < 35) y = year;
+    else if (y >= 35) { setYear(1); y = 1; }
+    playTimer.current = setInterval(() => {
+      y++;
+      setYear(y);
+      if (y >= 35) { clearInterval(playTimer.current); setIsPlaying(false); }
+    }, 550);
+  }, [year]);
+
+  const stopPlay = useCallback(() => {
+    clearInterval(playTimer.current);
+    setIsPlaying(false);
+  }, []);
+
+  const togglePlay = useCallback(() => {
+    if (isPlaying) stopPlay();
+    else startPlay();
+  }, [isPlaying, startPlay, stopPlay]);
+
+  useEffect(() => () => clearInterval(playTimer.current), []);
+
+  // If selected event no longer visible, deselect
+  useEffect(() => {
+    if (selEv && (selEv.year > year || !filters.has(selEv.type))) {
+      setSelectedId(null);
+    }
+  }, [year, filters]);
+
+  const toggleFilter = useCallback((type) => {
+    setFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type); else next.add(type);
+      return next;
+    });
+  }, []);
+
+  const setAllFilters = useCallback(() => {
+    setFilters(prev => prev.size === ALL_FILTER_TYPES.length ? new Set() : new Set(ALL_FILTER_TYPES));
+  }, []);
+
+  const toggleLayerVis = useCallback((key) => {
+    setLayerVis(prev => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  const L = lang === 'ru';
+  const FTYPES = [
+    {t:'battle',  en:'Battles',   ru:'Битвы'},
+    {t:'treaty',  en:'Treaties',  ru:'Договоры'},
+    {t:'journey', en:'Journeys',  ru:'Походы'},
+    {t:'conquest',en:'Conquests', ru:'Завоевания'},
+    {t:'event',   en:'Events',    ru:'События'},
+  ];
+
+  if (pageEvId) {
+    return <UnitPage focusId={pageEvId} lang={lang} onBack={() => setPageEvId(null)} />;
+  }
+
+  return (
+    <div className="card">
+      {/* HEADER */}
+      <div className="header">
+        <div className="header-left">
+          <span className="arabic">سيرة</span>
+          <span className="latin">Sirah Map</span>
+        </div>
+        <div className="header-right">
+          <button className={`spread-btn${isPlaying?' active':''}`} onClick={togglePlay}>
+            <span>{isPlaying ? '⏹' : '▶'}</span>
+            <span>{isPlaying ? (L?'Стоп':'Stop') : (L?'Анимация':'Spread')}</span>
+          </button>
+          <div className="lang-grp">
+            <button className={`lbtn${lang==='en'?' on':''}`} onClick={() => setLang('en')}>EN</button>
+            <button className={`lbtn${lang==='ru'?' on':''}`} onClick={() => setLang('ru')}>RU</button>
+          </div>
+        </div>
+      </div>
+
+      {/* MAP */}
+      <div className="map-aspect">
+        <div className="map-inner">
+          <div id="leaflet-map">
+            <MapView
+              year={year}
+              filters={filters}
+              lang={lang}
+              selectedId={selectedId}
+              layerVis={layerVis}
+              onSelect={(id) => { setSelectedId(id); setShowDetail(true); }}
+              onReadPage={(id) => setPageEvId(id)}
+            />
+          </div>
+
+          {/* Legend */}
+          <Legend layerVis={layerVis} onToggle={toggleLayerVis} lang={lang} />
+
+          {/* Play button */}
+          <button className="map-play-btn" onClick={togglePlay}>
+            {isPlaying ? '⏹' : '▶'}
+          </button>
+
+          {/* Event detail overlay (slides up) */}
+          {selEv && showDetail && (
+            <EventDetail ev={selEv} lang={lang} onClose={() => { setSelectedId(null); setShowDetail(false); }} />
+          )}
+        </div>
+      </div>
+
+      {/* CONTROLS */}
+      <div className="controls">
+        <div className="year-row">
+          <span className="year-num">{year} AH</span>
+        </div>
+        <div className="era-row">
+          {eraText} <span className="era-star">★</span>
+        </div>
+
+        {popYear !== null && (() => {
+          const evs = EVENTS.filter(e => e.year === popYear);
+          if (!evs.length) return null;
+          return (
+            <div className="yr-popup">
+              {evs.map((ev, i) => (
+                <div key={ev.id} className="yr-popup-card" onClick={() => {
+                  setSelectedId(ev.id);
+                  setShowDetail(false);
+                  if (window._flyToEvent) window._flyToEvent(ev.id);
+                }}>
+                  <span className="yr-popup-num">{i+1}</span>
+                  <span className="yr-popup-icon">{ev.icon}</span>
+                  <span className="yr-popup-title">{L ? ev.title.ru : ev.title.en}</span>
+                </div>
+              ))}
+              <button className="yr-popup-close" onClick={() => setPopYear(null)}>✕</button>
+            </div>
+          );
+        })()}
+
+        <div className="yr-circles-wrap">
+          <div className="yr-circles" ref={circlesRef}>
+            {Array.from({length:35},(_,i)=>i+1).map((n,i) => (
+              <div key={n} className="yr-dot-wrap">
+                {i > 0 && <div className={`yr-dash${n <= year ? ' passed' : ''}`}/>}
+                <div
+                  className={`yr-dot${n === year ? ' active' : ''}`}
+                  onClick={() => {
+                    setYear(n);
+                    if (popYear === n) {
+                      if (window._flyToDefault) window._flyToDefault();
+                    } else {
+                      setPopYear(n);
+                    }
+                  }}
+                >{n}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="filter-row">
+          <button
+            className={`fbtn all${filters.size===ALL_FILTER_TYPES.length?' on':''}`}
+            onClick={setAllFilters}
+          >
+            <div className="fdot" style={{background:'#d4a853'}}/>
+            {L?'Все':'All'}
+          </button>
+          {FTYPES.map(ft => (
+            <button
+              key={ft.t}
+              className={`fbtn${filters.has(ft.t)?' on':''}`}
+              data-t={ft.t}
+              onClick={() => toggleFilter(ft.t)}
+            >
+              <div className="fdot" style={{background:TYPES[ft.t].color}}/>
+              {L ? ft.ru : ft.en}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
