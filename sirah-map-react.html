@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>سيرة · Sirah Map</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
@@ -377,78 +377,94 @@ body {
   font-size:.82rem; color:#5a4828;
 }
 
-/* ── UNIT PAGE (Khan-style stacked sections) ─────────────── */
+/* ── UNIT PAGE (Khan Academy light theme) ────────────────── */
 .unit-page {
   position:fixed; inset:0; z-index:2000;
-  background:#0f0d09; overflow-y:auto;
+  background:#fff; overflow-y:auto;
   animation:epFadeIn .25s ease;
+  color:#1a1a1a;
+}
+.unit-page .ep-back {
+  background:#fff; border:1px solid #d6d6d6; color:#333;
+  border-radius:4px; padding:6px 14px; cursor:pointer;
+  font-family:'Inter','Segoe UI',sans-serif; font-size:.8rem; letter-spacing:0;
+  transition:background .15s;
+}
+.unit-page .ep-back:hover { background:#f0f0f0; border-color:#aaa; }
+.unit-page .ep-header-title {
+  font-family:'Inter','Segoe UI',sans-serif; font-size:.85rem; color:#666;
 }
 .up-header {
   display:flex; align-items:center; gap:14px;
-  padding:14px 24px; border-bottom:1px solid #2a2010;
-  position:sticky; top:0; background:#0b0907; z-index:10;
+  padding:14px 24px; border-bottom:1px solid #e8e8e8;
+  position:sticky; top:0; background:#fff; z-index:10;
 }
 .up-body { max-width:640px; margin:0 auto; padding:0 0 60px; }
 /* One section per event */
 .up-section {
   padding:32px 24px 28px;
-  border-bottom:8px solid #070503;
+  border-bottom:8px solid #f0f0f0;
 }
-.up-section.active { background:#0d0b08; }
+.up-section.active { background:#fafafa; }
 .up-section-title {
-  font-family:'Cinzel',serif; font-size:clamp(1.3rem,4vw,1.9rem);
-  font-weight:700; color:#e8d090; line-height:1.25; margin-bottom:14px;
+  font-family:'Inter','Segoe UI',sans-serif; font-size:clamp(1.2rem,4vw,1.7rem);
+  font-weight:700; color:#1a1a1a; line-height:1.25; margin-bottom:12px;
 }
 .up-section-desc {
-  font-family:'Cormorant Garamond',Georgia,serif; font-size:1.02rem;
-  color:#8a7048; line-height:1.72; margin-bottom:24px;
+  font-family:'Inter','Segoe UI',sans-serif; font-size:.95rem;
+  color:#555; line-height:1.7; margin-bottom:24px; white-space:pre-line;
 }
 /* Sub-item list */
 .up-item-list { display:flex; flex-direction:column; margin-bottom:24px; }
 .up-item-row {
   display:flex; align-items:center; gap:14px;
-  padding:13px 0; border-bottom:1px solid #1a1408;
+  padding:12px 0; border-bottom:1px solid #e8e8e8;
 }
-.up-item-row:first-child { border-top:1px solid #1a1408; }
+.up-item-row:first-child { border-top:1px solid #e8e8e8; }
 .up-item-icon {
   width:36px; height:36px; flex-shrink:0;
-  border:1px solid #252015; border-radius:6px;
-  background:#13110c; display:flex; align-items:center;
-  justify-content:center; font-size:1rem;
+  border:1.5px solid #b0b0b0; border-radius:4px;
+  background:#fff; display:flex; align-items:center;
+  justify-content:center; font-size:.95rem; color:#555;
 }
 .up-item-label {
-  font-family:'Cormorant Garamond',Georgia,serif; font-size:1rem;
-  color:#a08040; line-height:1.35;
+  font-family:'Inter','Segoe UI',sans-serif; font-size:.93rem;
+  color:#3a3a3a; line-height:1.4;
 }
 /* Practice card */
 .up-practice-card {
   display:flex; align-items:stretch;
-  border:1px solid #2a2010; border-radius:8px; overflow:hidden;
+  border:1px solid #d6d6d6; border-radius:6px; overflow:hidden;
+  background:#f7f8fa;
 }
 .up-pc-left {
-  flex:1; padding:14px 18px; background:#13110c;
+  flex:1; padding:14px 18px; background:transparent;
   display:flex; flex-direction:column; gap:11px;
 }
 .up-pc-title {
-  font-family:'Cinzel',serif; font-size:.7rem; font-weight:700;
-  color:#e8d090; line-height:1.4;
+  font-family:'Inter','Segoe UI',sans-serif; font-size:.82rem; font-weight:700;
+  color:#1a1a1a; line-height:1.4;
 }
 .up-pc-btn {
-  width:fit-content; background:transparent;
-  border:1.5px solid #d4a853; color:#d4a853;
-  border-radius:6px; padding:7px 20px; cursor:pointer;
-  font-family:'Cinzel',serif; font-size:.65rem; letter-spacing:.5px;
-  transition:background .18s;
+  width:fit-content; background:#fff;
+  border:2px solid #1865f2; color:#1865f2;
+  border-radius:4px; padding:7px 18px; cursor:pointer;
+  font-family:'Inter','Segoe UI',sans-serif; font-size:.8rem; font-weight:600;
+  letter-spacing:0; transition:background .15s;
 }
-.up-pc-btn:hover { background:rgba(212,168,83,.12); }
+.up-pc-btn:hover { background:#e8f0fe; }
 .up-pc-right {
-  width:96px; background:#0f0d09; border-left:1px solid #2a2010;
+  width:96px; background:#f0f0f0; border-left:1px solid #d6d6d6;
   display:flex; align-items:center; justify-content:center; text-align:center;
 }
 .up-pc-status {
-  font-family:'Cinzel',serif; font-size:.58rem; color:#5a4828;
-  letter-spacing:.5px; line-height:1.6;
+  font-family:'Inter','Segoe UI',sans-serif; font-size:.78rem; color:#666;
+  line-height:1.5;
 }
+.up-item-row.clickable { cursor:pointer; }
+.up-item-row.clickable:hover { background:#eef2ff; border-radius:4px; }
+.up-item-row.clickable .up-item-label { color:#1865f2; }
+.up-item-row.clickable .up-item-icon { border-color:#1865f2; color:#1865f2; }
 
 /* ── EVENT INFO CARD (bottom panel) ──────────────────────── */
 .ev-overlay {
@@ -688,10 +704,11 @@ const EVENTS = [
   {id:"hijra",     year:1, type:"journey", loc:"medina",  icon:"🌙",
    title:{en:"Al-Hijra — Migration to Medina",ru:"Хиджра — переселение в Медину",ar:"الهجرة النبوية"},
    date:{h:"1 AH",g:"622 CE"},place:{en:"Mecca → Medina",ru:"Мекка → Медина"},
-   summary:{en:"The Prophet ﷺ and companions migrated from Mecca to Medina, founding the first Muslim state and the Islamic calendar.",ru:"Пророк и сподвижники переселились из Мекки в Медину, основав первое государство."},
+   summary:{en:"The Prophet ﷺ and companions migrated from Mecca to Medina, founding the first Muslim state and the Islamic calendar.",ru:"После переселения из Мекки Посланник Аллаха ﷺ направился в Медину — город, который станет центром Ислама.\n\nЖители Медины каждый день выходили за город, ожидая его.\nЭто событие стало началом новой эпохи: формирования исламского общества, строительства мечети и объединения мусульман."},
    route:{from:"mecca",to:"medina"},
-   participants:[{name:"Prophet Muhammad ﷺ",role:"leader"},{name:"Abu Bakr al-Siddiq",role:"companion"},{name:"Ali ibn Abi Talib",role:"decoy in Mecca"}],
+   participants:[{name:"Prophet Muhammad ﷺ",role:"leader",role_ru:"командир"},{name:"Abu Bakr al-Siddiq",role:"companion",role_ru:"сподвижник"},{name:"Ali ibn Abi Talib",role:"decoy in Mecca",role_ru:"отвлёк врагов в Мекке"}],
    consequences:["Hijri calendar begins","First Muslim state established","Al-Masjid an-Nabawi built"],
+   consequences_ru:["Начало хиджрийского календаря","Основано первое мусульманское государство","Построена мечеть Пророка"],
    quran:"22:39",sources:["Sahih al-Bukhari","Sirah Ibn Hisham"]},
 
   {id:"masjid",   year:1, type:"event",   loc:"medina",  icon:"🕌",
@@ -699,6 +716,7 @@ const EVENTS = [
    date:{h:"1 AH",g:"622 CE"},place:{en:"Medina",ru:"Медина"},
    summary:{en:"The Prophet built the first mosque on land purchased from two orphans — the heart of the new state.",ru:"Первая мечеть на земле, купленной у двух сирот."},
    consequences:["First purpose-built mosque","The Prophet is buried here","One of the world's largest mosques today"],
+   consequences_ru:["Первая специально построенная мечеть","Здесь покоится Пророк","Ныне одна из крупнейших мечетей мира"],
    sources:["Sahih al-Bukhari"]},
 
   {id:"brotherhood",year:1,type:"event",  loc:"medina",  icon:"🤝",
@@ -706,6 +724,7 @@ const EVENTS = [
    date:{h:"1 AH",g:"622 CE"},place:{en:"Medina",ru:"Медина"},
    summary:{en:"The Prophet paired each Meccan emigrant with a Medinan helper, creating bonds deeper than blood.",ru:"Каждый мекканский переселенец получил мединского брата."},
    consequences:["Unity of the Ummah","Material support for emigrants","Foundation of Islamic society"],
+   consequences_ru:["Единство уммы","Материальная поддержка переселенцев","Основание исламского общества"],
    sources:["Sahih al-Bukhari"]},
 
   {id:"badr",     year:2, type:"battle",  loc:"badr",    icon:"⚔️",
@@ -714,15 +733,18 @@ const EVENTS = [
    summary:{en:"313 Muslims defeated a Qurayshi army of ~1,000. First and most decisive military victory.",ru:"313 мусульман разбили ~1000 курайшитов. Первая великая победа."},
    forces:{m:{n:313,cmd:"Prophet Muhammad ﷺ"},e:{n:1000,cmd:"Abu Jahl",f:"Quraysh"}},
    casualties:{m:{martyred:14},e:{killed:70,captured:70}},
-   participants:[{name:"Prophet Muhammad ﷺ",role:"commander"},{name:"Hamza ibn Abdul-Muttalib",role:"warrior"},{name:"Abu Jahl",role:"Quraysh chief, slain"}],
+   participants:[{name:"Prophet Muhammad ﷺ",role:"commander",role_ru:"командующий"},{name:"Hamza ibn Abdul-Muttalib",role:"warrior",role_ru:"воин"},{name:"Abu Jahl",role:"Quraysh chief, slain",role_ru:"вождь курайшитов, убит"}],
    consequences:["Muslim credibility established","Prisoners humanely treated","Mass morale boost"],
+   consequences_ru:["Авторитет мусульман утверждён","Пленные обращены гуманно","Мощный подъём духа"],
    quran:"3:123",sources:["Sahih al-Bukhari","Sirah Ibn Hisham"]},
 
   {id:"qibla",    year:2, type:"event",   loc:"medina",  icon:"🕋",
    title:{en:"Change of Qibla to Mecca",ru:"Смена киблы в сторону Мекки",ar:"تحويل القبلة"},
    date:{h:"2 AH",g:"624 CE"},place:{en:"Medina",ru:"Медина"},
    summary:{en:"The direction of prayer changed from Jerusalem to the Kaaba in Mecca.",ru:"Направление молитвы изменено с Иерусалима на Каабу."},
-   consequences:["Kaaba became focal point of all Muslim prayer"],quran:"2:144",sources:["Sahih al-Bukhari"]},
+   consequences:["Kaaba became focal point of all Muslim prayer"],
+   consequences_ru:["Кааба стала центром молитвы всех мусульман"],
+   quran:"2:144",sources:["Sahih al-Bukhari"]},
 
   {id:"uhud",     year:3, type:"battle",  loc:"uhud",    icon:"⚔️",
    title:{en:"Battle of Uhud",ru:"Битва при Ухуде",ar:"غزوة أحد"},
@@ -730,8 +752,10 @@ const EVENTS = [
    summary:{en:"Archers abandoned their posts; the tide turned. 70 martyred including Hamza.",ru:"Лучники покинули позиции. 70 мучеников, включая Хамзу."},
    forces:{m:{n:700,cmd:"Prophet Muhammad ﷺ"},e:{n:3000,cmd:"Abu Sufyan",f:"Quraysh"}},
    casualties:{m:{martyred:70},e:{killed:22}},
-   participants:[{name:"Hamza ibn Abdul-Muttalib",role:"martyr, uncle of the Prophet"},{name:"Khalid ibn al-Walid",role:"Quraysh cavalry (pre-Islam)"}],
-   consequences:["70 martyred","Prophet wounded","Lesson: obedience above all"],quran:"3:152",sources:["Sahih al-Bukhari"]},
+   participants:[{name:"Hamza ibn Abdul-Muttalib",role:"martyr, uncle of the Prophet",role_ru:"мученик, дядя Пророка"},{name:"Khalid ibn al-Walid",role:"Quraysh cavalry (pre-Islam)",role_ru:"кавалерия курайшитов (до Ислама)"}],
+   consequences:["70 martyred","Prophet wounded","Lesson: obedience above all"],
+   consequences_ru:["70 мучеников","Пророк ранен","Урок: послушание превыше всего"],
+   quran:"3:152",sources:["Sahih al-Bukhari"]},
 
   {id:"trench",   year:5, type:"battle",  loc:"medina",  icon:"🏰",
    title:{en:"Battle of the Trench (Khandaq)",ru:"Битва у Рва (Хандак)",ar:"غزوة الخندق"},
@@ -739,6 +763,7 @@ const EVENTS = [
    summary:{en:"A 10,000-strong coalition besieged Medina. Muslims dug a trench — Salman al-Farisi's strategy. Coalition withdrew after 27 days.",ru:"Коалиция 10 000 осадила Медину. Ров Салмана. Осада провалилась."},
    forces:{m:{n:3000,cmd:"Prophet Muhammad ﷺ"},e:{n:10000,cmd:"Abu Sufyan",f:"Ahzab coalition"}},
    consequences:["Coalition withdrew after 27 days","Last major Quraysh offensive","Prophet declared: Now we march against them"],
+   consequences_ru:["Коалиция отступила через 27 дней","Последнее крупное наступление курайшитов","Пророк провозгласил: теперь мы наступаем"],
    quran:"33:10",sources:["Sahih al-Bukhari"]},
 
   {id:"hudaybiyyah",year:6,type:"treaty", loc:"hudaybiyyah",icon:"📜",
@@ -747,14 +772,17 @@ const EVENTS = [
    summary:{en:"A 10-year peace with Quraysh — seemingly unfavorable, yet Allah called it a clear victory.",ru:"10-летний мир с курайшитами — названный Аллахом явной победой."},
    terms:["No war for 10 years","Muslims return this year without Umrah","Those fleeing to Muslims shall be returned"],
    consequences:["Quraysh recognized Muslim state","More converts in 2 years than in 18","Khalid and Amr ibn al-As embraced Islam"],
+   consequences_ru:["Курайшиты признали мусульманское государство","Больше обращённых за 2 года, чем за 18","Халид и Амр ибн аль-Ас приняли Ислам"],
    quran:"48:1",sources:["Sahih al-Bukhari"]},
 
   {id:"khaybar",  year:7, type:"battle",  loc:"khaybar", icon:"⚔️",
    title:{en:"Battle of Khaybar",ru:"Битва при Хайбаре",ar:"غزوة خيبر"},
    date:{h:"7 AH",g:"628 CE"},place:{en:"Khaybar, northern Arabia",ru:"Хайбар, северная Аравия"},
    summary:{en:"Muslims captured the fortified strongholds of Khaybar. Ali led the assault.",ru:"Мусульмане взяли укрепления Хайбара. Али возглавил штурм."},
-   participants:[{name:"Ali ibn Abi Talib",role:"flag bearer and assault commander"}],
-   consequences:["All fortresses fell","Northern routes secured"],sources:["Sahih al-Bukhari"]},
+   participants:[{name:"Ali ibn Abi Talib",role:"flag bearer and assault commander",role_ru:"знаменосец и командир штурма"}],
+   consequences:["All fortresses fell","Northern routes secured"],
+   consequences_ru:["Все крепости пали","Северные пути обезопасены"],
+   sources:["Sahih al-Bukhari"]},
 
   {id:"conquest_mecca",year:8,type:"conquest",loc:"mecca",icon:"🕋",
    title:{en:"Conquest of Mecca",ru:"Завоевание Мекки",ar:"فتح مكة المكرمة"},
@@ -763,19 +791,23 @@ const EVENTS = [
    forces:{m:{n:10000,cmd:"Prophet Muhammad ﷺ"}},
    route:{from:"medina",to:"mecca"},
    consequences:["Kaaba restored to monotheism","Mass acceptance of Islam","Bilal gave first adhan from the Kaaba","General amnesty — no looting"],
+   consequences_ru:["Кааба возвращена единобожию","Массовое принятие Ислама","Биляль впервые произнёс азан с Каабы","Всеобщая амнистия — без грабежа"],
    quran:"110:1-2",sources:["Sahih al-Bukhari","Sirah Ibn Kathir"]},
 
   {id:"tabuk",    year:9, type:"journey", loc:"tabuk",   icon:"🏜️",
    title:{en:"Expedition of Tabuk",ru:"Поход на Табук",ar:"غزوة تبوك"},
    date:{h:"9 AH",g:"630 CE"},place:{en:"Tabuk, northern Arabia",ru:"Табук, северная Аравия"},
    summary:{en:"The Prophet's last expedition — 700 km north to the Byzantine border. No battle; several communities submitted.",ru:"Последний поход — 700 км на север. Сражения не было."},
-   consequences:["Islamic authority reached Byzantine border","Last major expedition"],quran:"9:38",sources:["Sahih al-Bukhari"]},
+   consequences:["Islamic authority reached Byzantine border","Last major expedition"],
+   consequences_ru:["Власть Ислама достигла границ Византии","Последний крупный поход"],
+   quran:"9:38",sources:["Sahih al-Bukhari"]},
 
   {id:"farewell_hajj",year:10,type:"event",loc:"arafat",icon:"🕋",
    title:{en:"The Farewell Pilgrimage",ru:"Прощальное паломничество",ar:"حجة الوداع"},
    date:{h:"10 AH",g:"March 632 CE"},place:{en:"Mecca — Mount Arafat",ru:"Мекка — Гора Арафат"},
    summary:{en:"The Prophet's only Hajj with 100,000+ companions. The Farewell Sermon. Religion declared perfected.",ru:"Единственный хадж с 100 000+. Прощальная проповедь. Религия совершенна."},
    consequences:["Hajj rites permanently established","Islam declared complete — Quran 5:3"],
+   consequences_ru:["Обряды хаджа окончательно закреплены","Ислам объявлен завершённым — Коран 5:3"],
    quran:"5:3",sources:["Sahih al-Bukhari","Sahih Muslim"]},
 
   {id:"death_prophet",year:11,type:"event",loc:"medina",icon:"🌿",
@@ -783,57 +815,97 @@ const EVENTS = [
    date:{h:"12 Rabi al-Awwal, 11 AH",g:"8 June 632 CE"},place:{en:"Medina — house of Aisha",ru:"Медина — дом Аиши"},
    summary:{en:"The Prophet Muhammad ﷺ passed away at 63. Abu Bakr was elected first Caliph.",ru:"Пророк скончался в 63 года. Абу Бакр избран халифом."},
    consequences:["Quran fully preserved","Islam spread across Arabia","Abu Bakr elected first Caliph"],
+   consequences_ru:["Коран полностью сохранён","Ислам распространился по всей Аравии","Абу Бакр избран первым халифом"],
    quran:"3:144",sources:["Sahih al-Bukhari"]},
 
   {id:"ridda_wars",year:12,type:"battle",loc:"yamama",icon:"⚔️",
    title:{en:"Wars of Ridda",ru:"Войны Ридды",ar:"حروب الردة"},
    date:{h:"11–12 AH",g:"632–633 CE"},place:{en:"Yamama & Arabia",ru:"Ямама и Аравия"},
    summary:{en:"Abu Bakr fought apostate tribes, preserving the unity of the Islamic state.",ru:"Абу Бакр сохранил единство уммы против вероотступников."},
-   participants:[{name:"Khalid ibn al-Walid",role:"Muslim commander"},{name:"Musaylima al-Kadhdhab",role:"false prophet, slain"}],
-   consequences:["Arabia reunified","Quran compilation prompted"],sources:["Tarikh al-Tabari"]},
+   participants:[{name:"Khalid ibn al-Walid",role:"Muslim commander",role_ru:"мусульманский командующий"},{name:"Musaylima al-Kadhdhab",role:"false prophet, slain",role_ru:"лжепророк, убит"}],
+   consequences:["Arabia reunified","Quran compilation prompted"],
+   consequences_ru:["Аравия воссоединена","Положено начало сборнику Корана"],
+   sources:["Tarikh al-Tabari"]},
 
   {id:"damascus",year:14,type:"conquest",loc:"damascus",icon:"🏛️",
    title:{en:"Conquest of Damascus",ru:"Завоевание Дамаска",ar:"فتح دمشق"},
    date:{h:"Rajab 14 AH",g:"635 CE"},place:{en:"Damascus, Syria",ru:"Дамаск, Сирия"},
    summary:{en:"Khalid ibn al-Walid took Damascus after 70 nights — half by storm, half by treaty.",ru:"70-ночная осада: наполовину штурмом, наполовину договором."},
-   participants:[{name:"Abu Ubayda ibn al-Jarrah",role:"commander-in-chief"},{name:"Khalid ibn al-Walid",role:"night assault leader"}],
-   consequences:["Byzantine Syria's capital fell","Gateway to all of Syria opened"],sources:["Futuh al-Buldan"]},
+   participants:[{name:"Abu Ubayda ibn al-Jarrah",role:"commander-in-chief",role_ru:"главнокомандующий"},{name:"Khalid ibn al-Walid",role:"night assault leader",role_ru:"предводитель ночного штурма"}],
+   consequences:["Byzantine Syria's capital fell","Gateway to all of Syria opened"],
+   consequences_ru:["Столица Византийской Сирии пала","Открыты ворота всей Сирии"],
+   sources:["Futuh al-Buldan"]},
 
   {id:"yarmouk",year:15,type:"battle",loc:"yarmouk",icon:"⚔️",
    title:{en:"Battle of Yarmouk",ru:"Битва при Ярмуке",ar:"معركة اليرموك"},
    date:{h:"15 AH",g:"636 CE"},place:{en:"Yarmouk River, Syria",ru:"Река Ярмук, Сирия"},
    summary:{en:"36,000 Muslims defeated 100,000+ Byzantines. All of Syria opened to Islam.",ru:"36 000 против 100 000+. Вся Сирия открылась."},
    forces:{m:{n:36000,cmd:"Khalid ibn al-Walid"},e:{n:100000,cmd:"Vahan",f:"Byzantine Empire"}},
-   consequences:["All Syria opened","One of the most decisive battles in world history"],sources:["Futuh al-Buldan"]},
+   consequences:["All Syria opened","One of the most decisive battles in world history"],
+   consequences_ru:["Вся Сирия открылась для Ислама","Одна из решающих битв мировой истории"],
+   sources:["Futuh al-Buldan"]},
 
   {id:"qadisiyyah",year:15,type:"battle",loc:"qadisiyyah",icon:"⚔️",
    title:{en:"Battle of al-Qadisiyyah",ru:"Битва при Кадисийе",ar:"معركة القادسية"},
    date:{h:"15 AH",g:"636 CE"},place:{en:"al-Qadisiyyah, Iraq",ru:"Кадисийя, Ирак"},
    summary:{en:"Sa'd ibn Abi Waqqas defeated the Sassanid Empire, opening all of Mesopotamia to Islam.",ru:"Са'д разгромил Сасанидов. Вся Месопотамия открылась."},
    forces:{m:{n:30000,cmd:"Sa'd ibn Abi Waqqas"},e:{n:100000,cmd:"Rustam Farrokhzad",f:"Sassanid Empire",elephants:true}},
-   consequences:["Mesopotamia fell","Ctesiphon (al-Madain) fell","End of Sassanid Empire"],sources:["Tarikh al-Tabari"]},
+   consequences:["Mesopotamia fell","Ctesiphon (al-Madain) fell","End of Sassanid Empire"],
+   consequences_ru:["Месопотамия пала","Ктесифон (аль-Мадаин) пал","Конец Сасанидской империи"],
+   sources:["Tarikh al-Tabari"]},
 
   {id:"jerusalem",year:16,type:"conquest",loc:"jerusalem",icon:"🕌",
    title:{en:"Surrender of Jerusalem",ru:"Сдача Иерусалима",ar:"فتح بيت المقدس"},
    date:{h:"16 AH",g:"638 CE"},place:{en:"Jerusalem (al-Quds)",ru:"Иерусалим (аль-Кудс)"},
    summary:{en:"Patriarch Sophronius surrendered Jerusalem peacefully — only to Caliph Umar in person.",ru:"Патриарх сдал Иерусалим лично халифу Умару."},
-   consequences:["Third holiest city under Muslim rule","Jews allowed to return","Covenant of Umar — model of just governance"],sources:["Tarikh al-Tabari"]},
+   consequences:["Third holiest city under Muslim rule","Jews allowed to return","Covenant of Umar — model of just governance"],
+   consequences_ru:["Третий святой город под властью мусульман","Евреям разрешено вернуться","Договор Умара — образец справедливого правления"],
+   sources:["Tarikh al-Tabari"]},
 
   {id:"egypt",    year:19,type:"conquest",loc:"alexandria",icon:"🏺",
    title:{en:"Conquest of Egypt",ru:"Завоевание Египта",ar:"فتح مصر"},
    date:{h:"19–21 AH",g:"640–642 CE"},place:{en:"Egypt — Alexandria",ru:"Египет — Александрия"},
    summary:{en:"Amr ibn al-As conquered Egypt with 12,000 men, ending 600+ years of Byzantine rule.",ru:"12 000 воинов завершили 600 лет Byzantium в Египте."},
    forces:{m:{n:12000,cmd:"Amr ibn al-As"},e:{f:"Byzantine Empire"}},
-   consequences:["Egypt a wealthy province","Gateway to North Africa opened","Arabic became language of Egypt"],sources:["Futuh al-Buldan"]},
+   consequences:["Egypt a wealthy province","Gateway to North Africa opened","Arabic became language of Egypt"],
+   consequences_ru:["Египет стал богатой провинцией","Открыты ворота Северной Африки","Арабский стал языком Египта"],
+   sources:["Futuh al-Buldan"]},
 
   {id:"quran_std",year:25,type:"event",loc:"medina",icon:"📖",
    title:{en:"Standardization of the Quran",ru:"Стандартизация Корана",ar:"جمع القرآن عثمان"},
    date:{h:"25 AH",g:"~646 CE"},place:{en:"Medina",ru:"Медина"},
    summary:{en:"Uthman ibn Affan standardized the Quranic text and sent master copies to each province.",ru:"Усман стандартизировал текст Корана и разослал эталоны по провинциям."},
-   consequences:["The Uthmanic mushaf — the Quran recited today","Prevented textual division"],sources:["Sahih al-Bukhari","Tarikh al-Tabari"]},
+   consequences:["The Uthmanic mushaf — the Quran recited today","Prevented textual division"],
+   consequences_ru:["Усманский мусхаф — Коран, читаемый сегодня","Предотвращено текстовое разделение"],
+   sources:["Sahih al-Bukhari","Tarikh al-Tabari"]},
 ];
 
 const ALL_FILTER_TYPES = ['battle','treaty','journey','conquest','event'];
+
+// ── Topic detail pages (keyed by English consequence text) ──
+const TOPICS = {
+  "Hijri calendar begins": {
+    icon:"📅", title:{en:"The Hijri Calendar",ru:"Хиджрийский календарь"},
+    body:{
+      en:"The Hijri (Islamic) calendar is a lunar calendar that begins from the year of the Prophet's migration to Medina in 622 CE. It has 12 months and approximately 354 days per year — 11 days shorter than the solar year. Each month begins with the sighting of the new moon.\n\nThe calendar was formally codified under Caliph Umar ibn al-Khattab (r. 634–644 CE) to standardize the dating of Islamic events, contracts, and correspondence.",
+      ru:"Хиджрийский (исламский) календарь — лунный календарь, начинающийся с года переселения Пророка ﷺ в Медину (622 г. н.э.). Год состоит из 12 месяцев и примерно 354 дней — на 11 дней короче солнечного года. Начало каждого месяца определяется по появлению молодого месяца.\n\nКалендарь был официально принят при халифе Умаре ибн аль-Хаттабе для стандартизации датировки исламских событий, договоров и переписки."
+    }
+  },
+  "First Muslim state established": {
+    icon:"🏛️", title:{en:"The First Muslim State",ru:"Первое мусульманское государство"},
+    body:{
+      en:"After arriving in Medina, the Prophet ﷺ established the Constitution of Medina — a covenant between Muslims, Jewish tribes, and pagan clans. This document defined the rights, obligations, and mutual defense of all parties, creating the first organized Islamic polity.\n\nMedina became the capital of a state that unified previously warring tribes under a common framework of law and brotherhood. The Prophet ﷺ served as its political and spiritual leader.",
+      ru:"Прибыв в Медину, Пророк ﷺ заключил Конституцию Медины — соглашение между мусульманами, иудейскими племенами и язычниками. Этот документ определял права, обязанности и взаимную защиту всех сторон, создав первую организованную исламскую общину.\n\nМедина стала столицей государства, объединившего прежде враждовавшие племена. Пророк ﷺ стал его политическим и духовным руководителем."
+    }
+  },
+  "Al-Masjid an-Nabawi built": {
+    icon:"🕌", title:{en:"Al-Masjid an-Nabawi",ru:"Мечеть Пророка"},
+    body:{
+      en:"The Prophet's Mosque was built on land purchased from two orphans, Sahl and Suhayl. The Prophet ﷺ himself participated in its construction. It served as a mosque, school, community center, and seat of governance — the heart of the new Muslim civilization.\n\nToday it stands in Medina as one of the largest mosques in the world. The green dome above the Prophet's ﷺ burial chamber is one of the most recognizable symbols of Islam.",
+      ru:"Мечеть Пророка была построена на земле, купленной у двух сирот — Сахля и Сухайля. Пророк ﷺ лично участвовал в строительстве. Она служила мечетью, школой, общественным центром и резиденцией правления — сердцем новой мусульманской цивилизации.\n\nСегодня она стоит в Медине как одна из крупнейших мечетей мира. Зелёный купол над гробницей Пророка ﷺ — один из самых узнаваемых символов Ислама."
+    }
+  },
+};
 
 const CURRENT_AH = 35;
 const TICKS = Array.from({length: 35}, (_, i) => i + 1);
@@ -1348,7 +1420,7 @@ function EventPage({ ev, lang, onBack }) {
             {ev.participants.map((p,i) => (
               <div key={i} className="ep-person">
                 <span className="ep-person-name">{p.name}</span>
-                <span className="ep-person-role">{p.role}</span>
+                <span className="ep-person-role">{isRu && p.role_ru ? p.role_ru : p.role}</span>
               </div>
             ))}
           </div>
@@ -1357,7 +1429,7 @@ function EventPage({ ev, lang, onBack }) {
         {ev.consequences && ev.consequences.length > 0 && <>
           <div className="ep-section-title">{isRu ? 'Последствия' : 'Consequences'}</div>
           <ul className="ep-list">
-            {ev.consequences.map((c,i) => <li key={i}>{c}</li>)}
+            {(isRu && ev.consequences_ru ? ev.consequences_ru : ev.consequences).map((c,i) => <li key={i}>{c}</li>)}
           </ul>
         </>}
 
@@ -1380,7 +1452,7 @@ function EventPage({ ev, lang, onBack }) {
 /* ══════════════════════════════════════════════════════════
    UNIT PAGE — one section per event in the same year
 ══════════════════════════════════════════════════════════ */
-function UnitPage({ focusId, lang, onBack }) {
+function UnitPage({ focusId, lang, onBack, onTopicClick }) {
   const L = lang === 'ru';
   const focusRef = React.useRef(null);
 
@@ -1412,8 +1484,9 @@ function UnitPage({ focusId, lang, onBack }) {
 
           // Build sub-items: participants first, then consequences
           const subItems = [];
-          if (ev.participants) ev.participants.forEach(p => subItems.push({ icon:'👤', label: p.name + (p.role ? ` — ${p.role}` : '') }));
-          if (ev.consequences) ev.consequences.forEach(c => subItems.push({ icon:'›', label: c }));
+          const cons   = (L && ev.consequences_ru) ? ev.consequences_ru : (ev.consequences || []);
+          const consEn = ev.consequences || [];
+          cons.forEach((c, i) => subItems.push({ icon:'›', label: c, topicKey: consEn[i] }));
 
           return (
             <div
@@ -1426,12 +1499,18 @@ function UnitPage({ focusId, lang, onBack }) {
 
               {subItems.length > 0 && (
                 <div className="up-item-list">
-                  {subItems.map((item, i) => (
-                    <div key={i} className="up-item-row">
-                      <span className="up-item-icon">{item.icon}</span>
-                      <span className="up-item-label">{item.label}</span>
-                    </div>
-                  ))}
+                  {subItems.map((item, i) => {
+                    const hasTopic = item.topicKey && TOPICS[item.topicKey];
+                    return (
+                      <div key={i}
+                        className={`up-item-row${hasTopic ? ' clickable' : ''}`}
+                        onClick={hasTopic ? () => onTopicClick(item.topicKey) : undefined}
+                      >
+                        <span className="up-item-icon">{item.icon}</span>
+                        <span className="up-item-label">{item.label}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
@@ -1532,6 +1611,32 @@ function Legend({ layerVis, onToggle, lang }) {
 }
 
 /* ══════════════════════════════════════════════════════════
+   TOPIC PAGE
+══════════════════════════════════════════════════════════ */
+function TopicPage({ topicKey, lang, onBack }) {
+  const data = TOPICS[topicKey];
+  const L    = lang === 'ru';
+  const title = data ? (L ? data.title.ru : data.title.en) : topicKey;
+  const body  = data ? (L ? data.body.ru  : data.body.en)  : '';
+  return (
+    <div className="unit-page">
+      <div className="up-header">
+        <button className="ep-back" onClick={onBack}>← {L ? 'Назад' : 'Back'}</button>
+      </div>
+      <div style={{maxWidth:'640px',margin:'0 auto',padding:'32px 24px 60px'}}>
+        <div style={{fontSize:'clamp(1.2rem,4vw,1.7rem)',fontWeight:'700',color:'#1a1a1a',marginBottom:'18px',fontFamily:"'Inter','Segoe UI',sans-serif",lineHeight:'1.25'}}>
+          {data && <span style={{marginRight:'10px'}}>{data.icon}</span>}{title}
+        </div>
+        {body
+          ? <div style={{fontFamily:"'Inter','Segoe UI',sans-serif",fontSize:'.97rem',color:'#444',lineHeight:'1.75',whiteSpace:'pre-line'}}>{body}</div>
+          : <div style={{color:'#aaa',fontStyle:'italic',fontFamily:"'Inter','Segoe UI',sans-serif"}}>{L?'Контент скоро появится…':'Content coming soon…'}</div>
+        }
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
    MAIN APP
 ══════════════════════════════════════════════════════════ */
 function App() {
@@ -1544,6 +1649,7 @@ function App() {
   const [popYear,    setPopYear]    = useState(null);
   const [showDetail,  setShowDetail]  = useState(false);
   const [pageEvId,    setPageEvId]    = useState(null);
+  const [topicKey,    setTopicKey]    = useState(null);
   const [winStart,   setWinStart]   = useState(0);   // index into TICKS
   const WIN = 10;
   const [slideOffset, setSlideOffset] = useState(0);
@@ -1558,8 +1664,9 @@ function App() {
   useEffect(() => {
     const measure = () => {
       const wraps = circlesInnerRef.current?.querySelectorAll('.yr-dot-wrap');
-      if (wraps && wraps.length >= 2) {
-        dotUnitRef.current = wraps[1].getBoundingClientRect().left - wraps[0].getBoundingClientRect().left;
+      if (wraps && wraps.length >= 3) {
+        // Use wraps[2]-wraps[1] so the dash width is included in the unit
+        dotUnitRef.current = wraps[2].getBoundingClientRect().left - wraps[1].getBoundingClientRect().left;
       }
     };
     const t = setTimeout(measure, 150);
@@ -1636,8 +1743,11 @@ function App() {
     {t:'event',   en:'Events',    ru:'События'},
   ];
 
+  if (topicKey) {
+    return <TopicPage topicKey={topicKey} lang={lang} onBack={() => setTopicKey(null)} />;
+  }
   if (pageEvId) {
-    return <UnitPage focusId={pageEvId} lang={lang} onBack={() => setPageEvId(null)} />;
+    return <UnitPage focusId={pageEvId} lang={lang} onBack={() => setPageEvId(null)} onTopicClick={(k) => setTopicKey(k)} />;
   }
 
   return (
@@ -1651,7 +1761,7 @@ function App() {
         <div className="header-right">
           <button className={`spread-btn${isPlaying?' active':''}`} onClick={togglePlay}>
             <span>{isPlaying ? '⏹' : '▶'}</span>
-            <span>{isPlaying ? (L?'Стоп':'Stop') : (L?'Анимация':'Spread')}</span>
+            <span>{isPlaying ? (L?'Стоп':'Stop') : (L?'Распростр.':'Spread')}</span>
           </button>
           <div className="lang-grp">
             <button className={`lbtn${lang==='en'?' on':''}`} onClick={() => setLang('en')}>EN</button>
@@ -1732,41 +1842,25 @@ function App() {
             }}
           />
           <div className="yr-circles"
-            onMouseDown={e => { dragX.current = e.clientX; dragged.current = false; setIsSliding(true); }}
-            onMouseMove={e => {
+            onPointerDown={e => {
+              e.currentTarget.setPointerCapture(e.pointerId);
+              dragX.current = e.clientX; dragged.current = false; setIsSliding(true);
+            }}
+            onPointerMove={e => {
               if (dragX.current === null) return;
               const dx = e.clientX - dragX.current;
               if (Math.abs(dx) > 5) dragged.current = true;
               setSlideOffset(dx);
             }}
-            onMouseUp={e => {
+            onPointerUp={e => {
               if (dragX.current === null) return;
               const dx = e.clientX - dragX.current;
               const shift = -Math.round(dx / dotUnitRef.current);
               setWinStart(prev => Math.max(0, Math.min(TICKS.length - WIN, prev + shift)));
               setSlideOffset(0); setIsSliding(false); dragX.current = null;
             }}
-            onMouseLeave={e => {
-              if (dragX.current === null) return;
-              const dx = e.clientX - dragX.current;
-              const shift = -Math.round(dx / dotUnitRef.current);
-              setWinStart(prev => Math.max(0, Math.min(TICKS.length - WIN, prev + shift)));
-              setSlideOffset(0); setIsSliding(false); dragX.current = null;
-            }}
-            onTouchStart={e => { dragX.current = e.touches[0].clientX; dragged.current = false; setIsSliding(true); }}
-            onTouchMove={e => {
-              e.preventDefault();
-              if (dragX.current === null) return;
-              const dx = e.touches[0].clientX - dragX.current;
-              if (Math.abs(dx) > 5) dragged.current = true;
-              setSlideOffset(dx);
-            }}
-            onTouchEnd={e => {
-              if (dragX.current === null) return;
-              const dx = e.changedTouches[0].clientX - dragX.current;
-              const shift = -Math.round(dx / dotUnitRef.current);
-              setWinStart(prev => Math.max(0, Math.min(TICKS.length - WIN, prev + shift)));
-              setSlideOffset(0); setIsSliding(false); dragX.current = null;
+            onPointerCancel={e => {
+              dragX.current = null; setSlideOffset(0); setIsSliding(false);
             }}
           >
             <div
