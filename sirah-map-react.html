@@ -146,17 +146,37 @@ body {
   .lang-grp { gap:3px; }
   .lbtn { padding:3px 7px; font-size:.62rem; }
 
-  /* Controls bottom */
+  /* Controls — compact bottom strip (no circles here on mobile) */
   .controls { padding:8px 12px 10px; }
   .year-num { font-size:1.5rem; }
   .era-row  { font-size:.65rem; margin-bottom:8px; }
 
-  /* Year circles — smaller */
-  .yr-circles { padding:5px 0; }
-  .yr-dot  { width:24px; height:24px; font-size:.54rem; }
-  .yr-dash { width:5px; }
-  .yr-circles-wrap { margin-bottom:6px; }
-  .yr-scrubber { margin-bottom:5px; }
+  /* Year strip — fixed vertical pillar on right edge of screen */
+  .yr-circles-wrap {
+    position:fixed; right:6px; top:48px; bottom:100px;
+    z-index:450; margin:0;
+    display:flex; flex-direction:column; align-items:center;
+    width:auto; gap:0;
+  }
+  /* Hide the horizontal scrubber on mobile — use tap/scroll instead */
+  .yr-scrubber { display:none; }
+
+  /* Vertical circles */
+  .yr-circles {
+    overflow-y:auto; overflow-x:hidden; touch-action:pan-y;
+    padding:6px 4px; border-radius:20px; flex:1; width:auto;
+  }
+  .yr-circles-inner { flex-direction:column; padding:4px 0; }
+  .yr-dot-wrap { flex-direction:column; }
+  .yr-dash {
+    width:0; height:5px; flex-shrink:0;
+    border-top:none; border-left:2px dashed #1e1808;
+  }
+  .yr-dash.passed { border-left-color:#3a2a10; }
+  .yr-dot  { width:26px; height:26px; font-size:.56rem; }
+
+  /* Play button — shift left so it doesn't overlap the year strip */
+  .map-play-btn { right:52px; }
 
   /* Filter buttons — compact */
   .filter-row { gap:4px; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; padding-bottom:2px; }
@@ -173,8 +193,8 @@ body {
 }
 
 @media (max-width:380px) {
-  .yr-dot  { width:20px; height:20px; font-size:.48rem; }
-  .yr-dash { width:4px; }
+  .yr-dot  { width:22px; height:22px; font-size:.5rem; }
+  .yr-dash { height:4px; }
   .spread-btn span:last-child { display:none; }
 }
 .leg-sep { border:none; border-top:1px solid #2a2010; margin:6px 0 5px; }
@@ -1664,13 +1684,19 @@ function App() {
   const circlesRef      = useRef(null);   // scroll container
   const activeDotRef    = useRef(null);   // active year dot
 
-  // Scroll active dot into center of the timeline strip
+  // Scroll active dot into center of the timeline strip (works for both horizontal and vertical)
   useEffect(() => {
     const dot = activeDotRef.current;
     const container = circlesRef.current;
     if (!dot || !container) return;
-    const target = dot.offsetLeft - (container.offsetWidth - dot.offsetWidth) / 2;
-    container.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
+    const vertical = container.scrollHeight > container.clientHeight + 4;
+    if (vertical) {
+      const target = dot.offsetTop - (container.clientHeight - dot.offsetHeight) / 2;
+      container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+    } else {
+      const target = dot.offsetLeft - (container.clientWidth - dot.offsetWidth) / 2;
+      container.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
+    }
   }, [year]);
 
   // Derived
