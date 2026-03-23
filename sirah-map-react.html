@@ -126,29 +126,37 @@ body {
 .leg-row:last-child { margin-bottom:0; }
 .leg-row.off { opacity:.3; }
 .leg-swatch { width:11px; height:11px; border-radius:2px; flex-shrink:0; }
+/* ── TABLET (iPad / small laptop) ────────────────────────── */
+@media (max-width:900px) {
+  .controls { padding:clamp(10px,2vw,18px) clamp(14px,2.5vw,22px) clamp(12px,2vw,18px); }
+  .yr-dot  { width:30px; height:30px; }
+  .yr-dash { width:8px; }
+}
+
 /* ── MOBILE ──────────────────────────────────────────────── */
 @media (max-width:600px) {
   body { padding:0; }
   .card { border-radius:0; border-left:none; border-right:none; }
 
   /* Header */
-  .header { padding:10px 12px; gap:6px; }
+  .header { padding:8px 12px; gap:6px; }
   .arabic { font-size:1.3rem; }
   .latin  { display:none; }
   .spread-btn { padding:5px 11px; font-size:.52rem; gap:5px; }
   .lang-grp { gap:3px; }
-  .lbtn { padding:4px 7px; font-size:.62rem; }
+  .lbtn { padding:3px 7px; font-size:.62rem; }
 
   /* Controls bottom */
-  .controls { padding:10px 12px 12px; }
-  .year-num { font-size:1.6rem; }
-  .era-row  { font-size:.7rem; margin-bottom:10px; }
+  .controls { padding:8px 12px 10px; }
+  .year-num { font-size:1.5rem; }
+  .era-row  { font-size:.65rem; margin-bottom:8px; }
 
   /* Year circles — smaller */
-  .yr-circles { padding:5px 8px; gap:0; }
-  .yr-dot  { width:26px; height:26px; font-size:.56rem; }
-  .yr-dash { width:6px; }
-  .yr-circles-wrap { margin-bottom:8px; }
+  .yr-circles { padding:5px 0; }
+  .yr-dot  { width:24px; height:24px; font-size:.54rem; }
+  .yr-dash { width:5px; }
+  .yr-circles-wrap { margin-bottom:6px; }
+  .yr-scrubber { margin-bottom:5px; }
 
   /* Filter buttons — compact */
   .filter-row { gap:4px; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; padding-bottom:2px; }
@@ -165,8 +173,8 @@ body {
 }
 
 @media (max-width:380px) {
-  .yr-dot  { width:22px; height:22px; font-size:.5rem; }
-  .yr-dash { width:5px; }
+  .yr-dot  { width:20px; height:20px; font-size:.48rem; }
+  .yr-dash { width:4px; }
   .spread-btn span:last-child { display:none; }
 }
 .leg-sep { border:none; border-top:1px solid #2a2010; margin:6px 0 5px; }
@@ -196,15 +204,17 @@ body {
 /* Year slider */
 .yr-circles-wrap { margin-bottom:clamp(12px,2vw,18px); }
 .yr-circles {
-  overflow:hidden;
+  overflow-x:auto; overflow-y:hidden;
   padding:8px 0;
   background:#0e0b06; border-radius:40px; border:1px solid #2a2010;
-  cursor:grab; user-select:none; touch-action:none;
+  user-select:none; touch-action:pan-x;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
 }
-.yr-circles:active { cursor:grabbing; }
+.yr-circles::-webkit-scrollbar { display:none; }
 .yr-circles-inner {
   display:flex; align-items:center; gap:0;
-  padding:0 12px; will-change:transform;
+  padding:0 12px;
 }
 .yr-dot-wrap { display:flex; align-items:center; flex-shrink:0; }
 .yr-dot {
@@ -1650,36 +1660,17 @@ function App() {
   const [showDetail,  setShowDetail]  = useState(false);
   const [pageEvId,    setPageEvId]    = useState(null);
   const [topicKey,    setTopicKey]    = useState(null);
-  const [winStart,   setWinStart]   = useState(0);   // index into TICKS
-  const WIN = 10;
-  const [slideOffset, setSlideOffset] = useState(0);
-  const [isSliding,   setIsSliding]   = useState(false);
   const playTimer       = useRef(null);
-  const dragX           = useRef(null);
-  const dragged         = useRef(false);
-  const dotUnitRef      = useRef(48);
-  const circlesInnerRef = useRef(null);
+  const circlesRef      = useRef(null);   // scroll container
+  const activeDotRef    = useRef(null);   // active year dot
 
-  // Measure actual dot+dash unit after render
+  // Scroll active dot into center of the timeline strip
   useEffect(() => {
-    const measure = () => {
-      const wraps = circlesInnerRef.current?.querySelectorAll('.yr-dot-wrap');
-      if (wraps && wraps.length >= 3) {
-        // Use wraps[2]-wraps[1] so the dash width is included in the unit
-        dotUnitRef.current = wraps[2].getBoundingClientRect().left - wraps[1].getBoundingClientRect().left;
-      }
-    };
-    const t = setTimeout(measure, 150);
-    window.addEventListener('resize', measure);
-    return () => { clearTimeout(t); window.removeEventListener('resize', measure); };
-  }, []);
-
-  // Slide window to keep current year visible
-  useEffect(() => {
-    const idx = TICKS.indexOf(year);
-    if (idx < 0) return;
-    if (idx < winStart) setWinStart(Math.max(0, idx - 2));
-    else if (idx >= winStart + WIN) setWinStart(Math.min(TICKS.length - WIN, idx - WIN + 3));
+    const dot = activeDotRef.current;
+    const container = circlesRef.current;
+    if (!dot || !container) return;
+    const target = dot.offsetLeft - (container.offsetWidth - dot.offsetWidth) / 2;
+    container.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
   }, [year]);
 
   // Derived
@@ -1833,52 +1824,23 @@ function App() {
         <div className="yr-circles-wrap">
           <input
             type="range" className="yr-scrubber"
-            min={0} max={TICKS.length - WIN} value={winStart}
-            style={{'--pct': Math.round(winStart / (TICKS.length - WIN) * 100)}}
+            min={0} max={TICKS.length - 1} value={TICKS.indexOf(year)}
+            style={{'--pct': Math.round(TICKS.indexOf(year) / (TICKS.length - 1) * 100)}}
             onChange={e => {
-              setWinStart(Number(e.target.value));
               const n = TICKS[Number(e.target.value)];
               if (n) setYear(n);
             }}
           />
-          <div className="yr-circles"
-            onPointerDown={e => {
-              e.currentTarget.setPointerCapture(e.pointerId);
-              dragX.current = e.clientX; dragged.current = false; setIsSliding(true);
-            }}
-            onPointerMove={e => {
-              if (dragX.current === null) return;
-              const dx = e.clientX - dragX.current;
-              if (Math.abs(dx) > 5) dragged.current = true;
-              setSlideOffset(dx);
-            }}
-            onPointerUp={e => {
-              if (dragX.current === null) return;
-              const dx = e.clientX - dragX.current;
-              const shift = -Math.round(dx / dotUnitRef.current);
-              setWinStart(prev => Math.max(0, Math.min(TICKS.length - WIN, prev + shift)));
-              setSlideOffset(0); setIsSliding(false); dragX.current = null;
-            }}
-            onPointerCancel={e => {
-              dragX.current = null; setSlideOffset(0); setIsSliding(false);
-            }}
-          >
-            <div
-              ref={circlesInnerRef}
-              className="yr-circles-inner"
-              style={{
-                transform: `translateX(${-winStart * dotUnitRef.current + slideOffset}px)`,
-                transition: isSliding ? 'none' : 'transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)',
-              }}
-            >
+          <div className="yr-circles" ref={circlesRef}>
+            <div className="yr-circles-inner">
               {TICKS.map((n, i) => (
                 <div key={n} className="yr-dot-wrap">
                   {i > 0 && <div className={`yr-dash${n <= year ? ' passed' : ''}`}/>}
                   <div
+                    ref={n === year ? activeDotRef : null}
                     className={`yr-dot${n === year ? ' active' : ''}${n === CURRENT_AH ? ' current-ah' : ''}`}
                     style={{fontSize: n < 10 ? '.65rem' : n < 100 ? '.6rem' : n < 1000 ? '.48rem' : '.4rem'}}
                     onClick={() => {
-                      if (dragged.current) return;
                       setYear(n);
                       if (popYear === n) { if (window._flyToDefault) window._flyToDefault(); }
                       else setPopYear(n);
