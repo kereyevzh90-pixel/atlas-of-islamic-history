@@ -104,7 +104,7 @@ body {
 
 /* ── MAP UI BUTTONS ─────────────────────────────────────── */
 .map-play-btn {
-  position:absolute; bottom:clamp(12px,2vw,18px); right:clamp(12px,2vw,18px); z-index:600;
+  position:absolute; bottom:clamp(12px,2vw,18px); right:clamp(56px,7vw,70px); z-index:600;
   width:clamp(42px,5vw,54px); height:clamp(42px,5vw,54px); border-radius:50%;
   background:#d4a853; border:none; color:#14100b;
   font-size:clamp(1rem,2vw,1.3rem); cursor:pointer;
@@ -128,9 +128,9 @@ body {
 .leg-swatch { width:11px; height:11px; border-radius:2px; flex-shrink:0; }
 /* ── TABLET (iPad / small laptop) ────────────────────────── */
 @media (max-width:900px) {
-  .controls { padding:clamp(10px,2vw,18px) clamp(14px,2.5vw,22px) clamp(12px,2vw,18px); }
+  .controls { padding:clamp(10px,2vw,18px) clamp(14px,2.5vw,22px) clamp(12px,2vw,18px); padding-right:52px; }
   .yr-dot  { width:30px; height:30px; }
-  .yr-dash { width:8px; }
+  .yr-dash { height:8px; }
 }
 
 /* ── MOBILE ──────────────────────────────────────────────── */
@@ -138,7 +138,6 @@ body {
   body { padding:0; }
   .card { border-radius:0; border-left:none; border-right:none; }
 
-  /* Header */
   .header { padding:8px 12px; gap:6px; }
   .arabic { font-size:1.3rem; }
   .latin  { display:none; }
@@ -146,48 +145,19 @@ body {
   .lang-grp { gap:3px; }
   .lbtn { padding:3px 7px; font-size:.62rem; }
 
-  /* Controls — compact bottom strip (no circles here on mobile) */
-  .controls { padding:8px 12px 10px; }
+  .controls { padding:8px 12px 10px; padding-right:46px; }
   .year-num { font-size:1.5rem; }
   .era-row  { font-size:.65rem; margin-bottom:8px; }
 
-  /* Year strip — fixed vertical pillar on right edge of screen */
-  .yr-circles-wrap {
-    position:fixed; right:6px; top:48px; bottom:100px;
-    z-index:450; margin:0;
-    display:flex; flex-direction:column; align-items:center;
-    width:auto; gap:0;
-  }
-  /* Hide the horizontal scrubber on mobile — use tap/scroll instead */
-  .yr-scrubber { display:none; }
-
-  /* Vertical circles */
-  .yr-circles {
-    overflow-y:auto; overflow-x:hidden; touch-action:pan-y;
-    padding:6px 4px; border-radius:20px; flex:1; width:auto;
-  }
-  .yr-circles-inner { flex-direction:column; padding:4px 0; }
-  .yr-dot-wrap { flex-direction:column; }
-  .yr-dash {
-    width:0; height:5px; flex-shrink:0;
-    border-top:none; border-left:2px dashed #1e1808;
-  }
-  .yr-dash.passed { border-left-color:#3a2a10; }
   .yr-dot  { width:26px; height:26px; font-size:.56rem; }
+  .yr-dash { height:5px; }
 
-  /* Play button — shift left so it doesn't overlap the year strip */
-  .map-play-btn { right:52px; }
-
-  /* Filter buttons — compact */
   .filter-row { gap:4px; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; padding-bottom:2px; }
   .filter-row::-webkit-scrollbar { display:none; }
   .fbtn { padding:4px 9px; font-size:.5rem; letter-spacing:1px; white-space:nowrap; }
   .fdot { width:5px; height:5px; }
 
-  /* Legend */
   .legend { display:none; }
-
-  /* Event popup card */
   .yr-popup-card { max-width:90px; padding:5px 8px; }
   .yr-popup-title { font-size:.54rem; }
 }
@@ -206,7 +176,10 @@ body {
 .rl-t { font-family:'Cinzel',sans-serif; font-size:clamp(.48rem,.6vw,.6rem); font-weight:700; letter-spacing:1.5px; text-transform:uppercase; white-space:nowrap; text-shadow:0 1px 4px #000,0 0 8px #000; }
 
 /* ── CONTROLS ─────────────────────────────────────────────── */
-.controls { padding: clamp(14px,2.5vw,22px) clamp(16px,3vw,28px) clamp(16px,2.5vw,24px); }
+.controls {
+  padding: clamp(14px,2.5vw,22px) clamp(16px,3vw,28px) clamp(16px,2.5vw,24px);
+  padding-right: clamp(50px,7vw,64px); /* leave room for the vertical year strip */
+}
 .year-row { text-align:center; margin-bottom:2px; }
 .year-num {
   font-family:'Cinzel',Georgia,serif;
@@ -221,22 +194,29 @@ body {
 }
 .era-star { color:#d4a853; font-style:normal; }
 
-/* Year slider */
-.yr-circles-wrap { margin-bottom:clamp(12px,2vw,18px); }
+/* ── YEAR STRIP — always a vertical pillar on the right edge ── */
+.yr-scrubber { display:none; } /* scrubber hidden — use tap/scroll on the strip */
+.yr-circles-wrap {
+  position:fixed; right:6px;
+  top:clamp(46px,7vh,64px); bottom:clamp(90px,18vh,180px);
+  z-index:450; margin:0;
+  display:flex; flex-direction:column; align-items:center; width:auto;
+}
 .yr-circles {
-  overflow-x:auto; overflow-y:hidden;
-  padding:8px 0;
+  overflow-y:auto; overflow-x:hidden;
+  padding:6px 4px;
   background:#0e0b06; border-radius:40px; border:1px solid #2a2010;
-  user-select:none; touch-action:pan-x;
+  user-select:none; touch-action:pan-y;
   -webkit-overflow-scrolling:touch;
   scrollbar-width:none;
+  flex:1; width:auto;
 }
 .yr-circles::-webkit-scrollbar { display:none; }
 .yr-circles-inner {
-  display:flex; align-items:center; gap:0;
-  padding:0 12px;
+  display:flex; flex-direction:column; align-items:center; gap:0;
+  padding:4px 0;
 }
-.yr-dot-wrap { display:flex; align-items:center; flex-shrink:0; }
+.yr-dot-wrap { display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
 .yr-dot {
   width:34px; height:34px; border-radius:50%;
   display:flex; align-items:center; justify-content:center; flex-shrink:0;
@@ -249,12 +229,10 @@ body {
   background:#d4a853; border-color:#d4a853; color:#0b0907;
   box-shadow:0 0 10px rgba(212,168,83,.55);
 }
-.yr-dot.current-ah {
-  border-color:#6a9a53; color:#6a9a53;
-}
+.yr-dot.current-ah { border-color:#6a9a53; color:#6a9a53; }
 .yr-dot.current-ah.active { background:#6a9a53; border-color:#6a9a53; color:#0b0907; }
-.yr-dash { width:10px; height:0; flex-shrink:0; border-top:2px dashed #1e1808; }
-.yr-dash.passed { border-color:#3a2a10; }
+.yr-dash { width:0; height:10px; flex-shrink:0; border-left:2px dashed #1e1808; }
+.yr-dash.passed { border-left-color:#3a2a10; }
 
 /* Scrubber */
 .yr-scrubber {
