@@ -104,7 +104,7 @@ body {
 
 /* ── MAP UI BUTTONS ─────────────────────────────────────── */
 .map-play-btn {
-  position:absolute; bottom:clamp(12px,2vw,18px); right:clamp(56px,7vw,70px); z-index:600;
+  position:absolute; bottom:clamp(12px,2vw,18px); right:clamp(12px,2vw,18px); z-index:600;
   width:clamp(42px,5vw,54px); height:clamp(42px,5vw,54px); border-radius:50%;
   background:#d4a853; border:none; color:#14100b;
   font-size:clamp(1rem,2vw,1.3rem); cursor:pointer;
@@ -128,7 +128,7 @@ body {
 .leg-swatch { width:11px; height:11px; border-radius:2px; flex-shrink:0; }
 /* ── TABLET (iPad / small laptop) ────────────────────────── */
 @media (max-width:900px) {
-  .controls { padding:clamp(10px,2vw,18px) clamp(14px,2.5vw,22px) clamp(12px,2vw,18px); padding-right:52px; }
+  .controls { padding:clamp(10px,2vw,18px) clamp(14px,2.5vw,22px) clamp(12px,2vw,18px); }
   .yr-circles-wrap { --dot-sz:30px; --dash-sz:8px; }
 }
 
@@ -144,11 +144,14 @@ body {
   .lang-grp { gap:3px; }
   .lbtn { padding:3px 7px; font-size:.62rem; }
 
-  .controls { padding:8px 12px 10px; padding-right:46px; }
+  .controls { padding:8px 12px 10px; }
   .year-num { font-size:1.5rem; }
   .era-row  { font-size:.65rem; margin-bottom:8px; }
 
-  .yr-circles-wrap { --dot-sz:26px; --dash-sz:5px; }
+  .yr-circles-wrap { --dot-sz:26px; --dash-sz:5px; margin-bottom:6px; }
+  .yr-scrubber { height:4px; margin-bottom:6px; }
+  .yr-scrubber::-webkit-slider-thumb { width:18px; height:18px; }
+  .yr-circles { padding:5px 0; }
 
   .filter-row { gap:4px; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; padding-bottom:2px; }
   .filter-row::-webkit-scrollbar { display:none; }
@@ -173,10 +176,7 @@ body {
 .rl-t { font-family:'Cinzel',sans-serif; font-size:clamp(.48rem,.6vw,.6rem); font-weight:700; letter-spacing:1.5px; text-transform:uppercase; white-space:nowrap; text-shadow:0 1px 4px #000,0 0 8px #000; }
 
 /* ── CONTROLS ─────────────────────────────────────────────── */
-.controls {
-  padding: clamp(14px,2.5vw,22px) clamp(16px,3vw,28px) clamp(16px,2.5vw,24px);
-  padding-right: clamp(50px,7vw,64px); /* leave room for the vertical year strip */
-}
+.controls { padding: clamp(14px,2.5vw,22px) clamp(16px,3vw,28px) clamp(16px,2.5vw,24px); }
 .year-row { text-align:center; margin-bottom:2px; }
 .year-num {
   font-family:'Cinzel',Georgia,serif;
@@ -191,22 +191,18 @@ body {
 }
 .era-star { color:#d4a853; font-style:normal; }
 
-/* ── YEAR STRIP — vertical pillar on right edge, all devices ── */
+/* ── YEAR SLIDER ─────────────────────────────────────────── */
 .yr-circles-wrap {
   --dot-sz: 34px;
   --dash-sz: 10px;
-  position:fixed; right:6px; top:clamp(46px,7vh,64px);
-  z-index:450; margin:0;
-  display:flex; flex-direction:row; align-items:flex-start; gap:4px; width:auto;
+  margin-bottom: clamp(12px,2vw,18px);
 }
-/* Vertical scrubber — thin bar to the left of the circles */
+/* Horizontal scrubber */
 .yr-scrubber {
-  writing-mode:vertical-lr;
+  width:100%; margin-bottom:8px;
   -webkit-appearance:none; appearance:none;
-  width:4px; flex-shrink:0;
-  height:calc(10 * var(--dot-sz) + 9 * var(--dash-sz) + 12px);
-  border-radius:2px;
-  background:linear-gradient(to bottom, #d4a853 calc(var(--pct)*1%), #2a2010 calc(var(--pct)*1%));
+  height:3px; border-radius:2px;
+  background:linear-gradient(to right, #d4a853 calc(var(--pct)*1%), #2a2010 calc(var(--pct)*1%));
   outline:none; cursor:pointer;
 }
 .yr-scrubber::-webkit-slider-thumb {
@@ -219,20 +215,19 @@ body {
   background:#d4a853; border:none; cursor:pointer;
 }
 .yr-circles {
-  overflow-y:auto; overflow-x:hidden;
-  padding:6px 4px;
-  height:calc(10 * var(--dot-sz) + 9 * var(--dash-sz) + 12px);
+  overflow-x:auto; overflow-y:hidden;
+  padding:8px 0;
   background:#0e0b06; border-radius:40px; border:1px solid #2a2010;
-  user-select:none; touch-action:pan-y;
+  user-select:none; touch-action:pan-x;
   -webkit-overflow-scrolling:touch;
-  scrollbar-width:none; width:auto;
+  scrollbar-width:none;
 }
 .yr-circles::-webkit-scrollbar { display:none; }
 .yr-circles-inner {
-  display:flex; flex-direction:column; align-items:center; gap:0;
-  padding:4px 0;
+  display:flex; flex-direction:row; align-items:center; gap:0;
+  padding:0 12px;
 }
-.yr-dot-wrap { display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+.yr-dot-wrap { display:flex; flex-direction:row; align-items:center; flex-shrink:0; }
 .yr-dot {
   width:var(--dot-sz); height:var(--dot-sz); border-radius:50%;
   display:flex; align-items:center; justify-content:center; flex-shrink:0;
@@ -247,8 +242,8 @@ body {
 }
 .yr-dot.current-ah { border-color:#6a9a53; color:#6a9a53; }
 .yr-dot.current-ah.active { background:#6a9a53; border-color:#6a9a53; color:#0b0907; }
-.yr-dash { width:0; height:var(--dash-sz); flex-shrink:0; border-left:2px dashed #1e1808; }
-.yr-dash.passed { border-left-color:#3a2a10; }
+.yr-dash { height:0; width:var(--dash-sz); flex-shrink:0; border-top:2px dashed #1e1808; }
+.yr-dash.passed { border-top-color:#3a2a10; }
 
 /* Year popup */
 .yr-popup {
@@ -1656,19 +1651,13 @@ function App() {
   const circlesRef      = useRef(null);   // scroll container
   const activeDotRef    = useRef(null);   // active year dot
 
-  // Scroll active dot into center of the timeline strip (works for both horizontal and vertical)
+  // Scroll active dot into center of the timeline strip
   useEffect(() => {
     const dot = activeDotRef.current;
     const container = circlesRef.current;
     if (!dot || !container) return;
-    const vertical = container.scrollHeight > container.clientHeight + 4;
-    if (vertical) {
-      const target = dot.offsetTop - (container.clientHeight - dot.offsetHeight) / 2;
-      container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
-    } else {
-      const target = dot.offsetLeft - (container.clientWidth - dot.offsetWidth) / 2;
-      container.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
-    }
+    const target = dot.offsetLeft - (container.clientWidth - dot.offsetWidth) / 2;
+    container.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
   }, [year]);
 
   // Derived
